@@ -33,7 +33,9 @@
       "Bash(curl:*)",
       "Bash(file:*)",
       "Bash(chmod:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)"
     ]
   },
   "outputStyle": "default"
