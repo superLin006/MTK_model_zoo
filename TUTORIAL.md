@@ -159,6 +159,7 @@ Agent 自动工作
 ### 5.1 Whisper 移植提示词模板
 
 适用于：**语音识别模型**（Whisper、SenseVoice 等）
+![alt text](3_assert/prompts_2.png)
 
 <details>
 <summary>点击展开完整提示词</summary>
@@ -273,7 +274,7 @@ Agent 自动工作
 ### 5.2 Real-ESRGAN 移植提示词模板
 
 适用于：**超分辨率模型**（Real-ESRGAN、EDSR、RCAN 等）
-
+![alt text](3_assert/prompts_1.png)
 <details>
 <summary>点击展开完整提示词</summary>
 
