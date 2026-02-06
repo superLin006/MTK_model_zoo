@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(adb devices:*)",
+      "Bash(adb shell:*)",
+      "Bash(adb push:*)",
+      "Bash(ls:*)",
+      "Bash(./build.sh:*)",
+      "Bash(export:*)",
+      "Bash(export MTK_NEURON_SDK_ROOT=/home/xh/projects/MTK/whisper/whisper_mtk_cpp/third_party)",
+      "Bash(cmake --build:*)",
+      "Bash(nm install/bin/test_audio_frontend)",
+      "Bash(grep:*)",
+      "Bash(claude -c:*)",
+      "Bash(conda env list:*)",
+      "Bash(conda create:*)",
+      "Bash(source:*)",
+      "Bash(conda activate:*)",
+      "Bash(pip show:*)",
+      "Bash(python3:*)",
+      "Bash(python convert.py:*)",
+      "Bash(python test_pt_model.py:*)",
+      "Bash(python test_tflite_model.py:*)",
+      "Bash(python:*)",
+      "Bash(make:*)",
+      "Bash(./build_and_push.sh:*)",
+      "Bash(git clone:*)",
+      "Bash(find:*)",
+      "Bash(conda info:*)",
+      "Bash(pip install:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(tree:*)",
+      "Bash(curl:*)",
+      "Bash(file:*)",
+      "Bash(chmod:*)",
+      "Bash(git add:*)"
+    ]
+  },
+  "outputStyle": "default"
+}

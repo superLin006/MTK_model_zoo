@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Models (large files - skip from git)
+*.pt
+*.pth
+*.h5
+*.weights
+*.onnx
+*.rknn
+*.dla
+
+# Intermediate files
+*.tflite
+*_core_*.pt
+*_meanshift_params.json
+
+# Output files
+data/output/
+data/picture/
+*/test_data/output/
+*/rknn/model/
+*.log
+
+# C++ build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+libs/
+obj/
+jni/libs/
+jni/obj/
+build/
+*.apk
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*_temp*
+*.tmp

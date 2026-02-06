@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+
+# Model files (too large for git)
+model_prepare/model_kvcache/*.pt
+model_prepare/model_kvcache/*.tflite
+model_prepare/model_kvcache/*.dla
+model_prepare/model_kvcache/*.bin
+model_prepare/model_kvcache/*.spm
+model_prepare/model_kvcache/*.txt
+
+# Models directory (symlink or downloaded)
+models/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

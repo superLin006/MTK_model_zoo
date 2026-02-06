@@ -1,0 +1,25 @@
+# Build outputs
+build_android/
+obj/
+libs/
+install/
+
+# Backup files
+backup_*/
+*.bak
+
+# Compiled binaries
+*.o
+*.a
+*.so
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

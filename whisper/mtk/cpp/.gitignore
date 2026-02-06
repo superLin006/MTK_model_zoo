@@ -1,0 +1,25 @@
+# Build artifacts
+obj/
+libs/
+build/
+install/
+
+# JNI build artifacts
+jni/obj/
+jni/libs/
+
+# Debug files
+*.bin
+*.o
+*.d
+*.a
+*.so
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log

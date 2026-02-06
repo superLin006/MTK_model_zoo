@@ -1,0 +1,87 @@
+{
+  "model_name": "whisper-base",
+  "model_type": "encoder-decoder",
+  "audio_duration_sec": 30,
+  "encoder": {
+    "input_shape": [
+      1,
+      80,
+      3000
+    ],
+    "output_shape": [
+      1,
+      1500,
+      512
+    ],
+    "n_mels": 80,
+    "n_ctx": 1500,
+    "n_state": 512,
+    "n_head": 8,
+    "n_layer": 6,
+    "file": "encoder_base_3000.pt"
+  },
+  "decoder": {
+    "input_embedding_shape": [
+      1,
+      448,
+      512
+    ],
+    "input_encoder_shape": [
+      1,
+      1500,
+      512
+    ],
+    "output_shape": [
+      1,
+      448,
+      51865
+    ],
+    "n_vocab": 51865,
+    "n_ctx": 448,
+    "n_state": 512,
+    "n_head": 8,
+    "n_layer": 6,
+    "file": "decoder_base_448.pt"
+  },
+  "embedding": {
+    "vocab_size": 51865,
+    "embedding_dim": 512,
+    "token_embedding_file": "token_embedding.npy",
+    "info_file": "embedding_info.json"
+  },
+  "files": {
+    "encoder_torchscript": "encoder_base_3000.pt",
+    "decoder_torchscript": "decoder_base_448.pt",
+    "token_embedding": "token_embedding.npy",
+    "embedding_info": "embedding_info.json",
+    "encoder_onnx": "encoder_base_80x3000.onnx",
+    "decoder_onnx": "decoder_base_448.onnx"
+  },
+  "notes": [
+    "Encoder\u8f93\u5165\u4e3amel-spectrogram\uff0c30\u79d2\u97f3\u9891\u5bf9\u5e943000\u5e27",
+    "Decoder\u8f93\u5165\u4e3aembeddings\uff08\u5df2\u67e5\u8868\uff09\uff0c\u4e0d\u63a5\u53d7token IDs",
+    "Token embedding\u9700\u8981\u5728C++\u7aef\u624b\u52a8\u5b9e\u73b0\uff08GATHER\u7b97\u5b50\u4e0d\u652f\u6301\uff09",
+    "Conv2 stride=2\u5c06encoder\u8f93\u5165\u4ece3000\u5e27\u964d\u91c7\u6837\u52301500\u5e27",
+    "\u65e0KV cache\u5b9e\u73b0\uff08\u7b80\u5316\u7248\u672c\uff09"
+  ],
+  "onnx_export": {
+    "timestamp": "2026-02-04 12:03:32",
+    "opset_version": 13,
+    "encoder_shape": [
+      1,
+      80,
+      3000
+    ],
+    "decoder_token_emb_shape": [
+      1,
+      448,
+      512
+    ],
+    "decoder_encoder_out_shape": [
+      1,
+      1500,
+      512
+    ],
+    "note": "ONNX \u2192 TFLite conversion requires Python 3.10/3.11 + mtk_converter"
+  }
+}

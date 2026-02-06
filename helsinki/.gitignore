@@ -1,0 +1,41 @@
+# Large model files
+*.pt
+*.tflite
+*.dla
+*.bin
+*.spm
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.egg-info/
+
+# Build outputs
+obj/
+libs/
+*.o
+*.a
+*.so
+
+# Dependencies
+node_modules/
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+helsinki_workspace/models/
+helsinki_workspace/model_prepare/model_kvcache/
+.claude/

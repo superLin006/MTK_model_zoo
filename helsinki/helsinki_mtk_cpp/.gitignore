@@ -1,0 +1,23 @@
+# Build outputs
+obj/
+libs/
+
+# Compiled binaries
+*.o
+*.a
+*.so
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+backup_*/

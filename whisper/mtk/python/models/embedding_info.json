@@ -1,0 +1,7 @@
+{
+  "vocab_size": 51865,
+  "embedding_dim": 512,
+  "token_embedding_file": "token_embedding.npy",
+  "dtype": "float32",
+  "notes": "Token embedding weights for C++ manual lookup (GATHER not supported)"
+}

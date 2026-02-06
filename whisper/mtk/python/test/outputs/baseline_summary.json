@@ -1,0 +1,196 @@
+{
+  "test_zh": {
+    "audio_file": "test_zh.wav",
+    "model": "base",
+    "device": "cpu",
+    "language_detected": "zh",
+    "language_specified": "zh",
+    "text": "對我做了介紹我想說的是大家如果對我的研究感興趣",
+    "segments": [
+      {
+        "id": 0,
+        "seek": 0,
+        "start": 0.0,
+        "end": 1.54,
+        "text": "對我做了介紹",
+        "tokens": [
+          50364,
+          2855,
+          1654,
+          10907,
+          2289,
+          30312,
+          38193,
+          50441
+        ],
+        "temperature": 0.0,
+        "avg_logprob": -0.38197895196767956,
+        "compression_ratio": 0.8961038961038961,
+        "no_speech_prob": 0.10216055810451508
+      },
+      {
+        "id": 1,
+        "seek": 0,
+        "start": 1.8,
+        "end": 3.08,
+        "text": "我想說的是",
+        "tokens": [
+          50454,
+          25246,
+          4622,
+          24620,
+          50518
+        ],
+        "temperature": 0.0,
+        "avg_logprob": -0.38197895196767956,
+        "compression_ratio": 0.8961038961038961,
+        "no_speech_prob": 0.10216055810451508
+      },
+      {
+        "id": 2,
+        "seek": 0,
+        "start": 3.3200000000000003,
+        "end": 5.12,
+        "text": "大家如果對我的研究感興趣",
+        "tokens": [
+          50530,
+          6868,
+          13119,
+          2855,
+          14200,
+          23230,
+          242,
+          44704,
+          9709,
+          44089,
+          39835,
+          50620
+        ],
+        "temperature": 0.0,
+        "avg_logprob": -0.38197895196767956,
+        "compression_ratio": 0.8961038961038961,
+        "no_speech_prob": 0.10216055810451508
+      }
+    ],
+    "model_load_time": 0.6215701103210449,
+    "inference_time": 1.2179954051971436,
+    "total_time": 1.8395655155181885
+  },
+  "test_en": {
+    "audio_file": "test_en.wav",
+    "model": "base",
+    "device": "cpu",
+    "language_detected": "en",
+    "language_specified": "en",
+    "text": " Mr. Quilter is the apostle of the middle classes, and we are glad to welcome his gospel.",
+    "segments": [
+      {
+        "id": 0,
+        "seek": 0,
+        "start": 0.0,
+        "end": 5.44,
+        "text": " Mr. Quilter is the apostle of the middle classes, and we are glad to welcome his gospel.",
+        "tokens": [
+          50364,
+          2221,
+          13,
+          2326,
+          388,
+          391,
+          307,
+          264,
+          50244,
+          295,
+          264,
+          2808,
+          5359,
+          11,
+          293,
+          321,
+          366,
+          5404,
+          281,
+          2928,
+          702,
+          14943,
+          13,
+          50636
+        ],
+        "temperature": 0.0,
+        "avg_logprob": -0.21771760940551757,
+        "compression_ratio": 1.0864197530864197,
+        "no_speech_prob": 0.007447191514074802
+      }
+    ],
+    "model_load_time": 0.4503152370452881,
+    "inference_time": 0.6881091594696045,
+    "total_time": 1.1384243965148926
+  },
+  "jfk": {
+    "audio_file": "jfk.flac",
+    "model": "base",
+    "device": "cpu",
+    "language_detected": "en",
+    "language_specified": "en",
+    "text": " And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+    "segments": [
+      {
+        "id": 0,
+        "seek": 0,
+        "start": 0.0,
+        "end": 7.6000000000000005,
+        "text": " And so my fellow Americans ask not what your country can do for you,",
+        "tokens": [
+          50364,
+          400,
+          370,
+          452,
+          7177,
+          6280,
+          1029,
+          406,
+          437,
+          428,
+          1941,
+          393,
+          360,
+          337,
+          291,
+          11,
+          50744
+        ],
+        "temperature": 0.0,
+        "avg_logprob": -0.3966234141382678,
+        "compression_ratio": 1.3417721518987342,
+        "no_speech_prob": 0.09206917881965637
+      },
+      {
+        "id": 1,
+        "seek": 0,
+        "start": 7.6000000000000005,
+        "end": 10.6,
+        "text": " ask what you can do for your country.",
+        "tokens": [
+          50744,
+          1029,
+          437,
+          291,
+          393,
+          360,
+          337,
+          428,
+          1941,
+          13,
+          50894
+        ],
+        "temperature": 0.0,
+        "avg_logprob": -0.3966234141382678,
+        "compression_ratio": 1.3417721518987342,
+        "no_speech_prob": 0.09206917881965637
+      }
+    ],
+    "model_load_time": 0.36333799362182617,
+    "inference_time": 0.7063546180725098,
+    "total_time": 1.069692611694336
+  }
+}

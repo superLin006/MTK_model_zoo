@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Model binary files (large files)
+*.pt
+*.tflite
+*.dla
+*.onnx
+*.bin
+*.safetensors
+*.gguf
+
+# Model directories with large files
+SenseVoice_workspace/models/sensevoice-small/model.pt
+SenseVoice_workspace/model_prepare/model/*.pt
+SenseVoice_workspace/model_prepare/model/*.tflite
+SenseVoice_workspace/compile/*.dla
+
+# Test outputs
+*.wav
+*.mp3
+*.flac
+*.ogg
+audios/*.wav
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.claude/
+
+# Build artifacts
+*.o
+*.a
+*.out
+*.exe
+install/
+sensevoice_mtk_cpp/install/
+sensevoice_mtk_cpp/obj/
+sensevoice_mtk_cpp/libs/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

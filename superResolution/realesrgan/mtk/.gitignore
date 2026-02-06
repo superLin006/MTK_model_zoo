@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# 模型文件（大文件）
+*.pth
+*.pt
+*.tflite
+*.dla
+*.onnx
+
+# C++ 编译输出
+cpp/build/
+cpp/obj/
+*.o
+*.a
+*.exe
+
+# 测试输出
+test_data/output/*.png
+test_data/output/*.jpg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
