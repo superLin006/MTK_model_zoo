@@ -25,19 +25,46 @@ int load_audio(const char* filename, audio_buffer_t* audio) {
         return -1;
     }
 
-    // Simple WAV parsing (16-bit PCM, mono, 16kHz)
-    char header[44];
-    fread(header, 1, 44, fp);
+    // Read RIFF header
+    char riff_header[12];
+    if (fread(riff_header, 1, 12, fp) != 12) {
+        std::cerr << "[ERROR] Failed to read RIFF header" << std::endl;
+        fclose(fp);
+        return -1;
+    }
 
     // Check for RIFF header
-    if (strncmp(header, "RIFF", 4) != 0) {
+    if (strncmp(riff_header, "RIFF", 4) != 0 || strncmp(riff_header + 8, "WAVE", 4) != 0) {
         std::cerr << "[ERROR] Not a valid WAV file" << std::endl;
         fclose(fp);
         return -1;
     }
 
-    // Get data size
-    int data_size = *(int*)&header[40];
+    // Search for "data" chunk
+    int data_size = 0;
+    long data_pos = 0;
+    char chunk_header[8];
+
+    while (fread(chunk_header, 1, 8, fp) == 8) {
+        int chunk_size = *(int*)&chunk_header[4];
+
+        if (strncmp(chunk_header, "data", 4) == 0) {
+            // Found data chunk
+            data_size = chunk_size;
+            data_pos = ftell(fp);
+            break;
+        } else {
+            // Skip this chunk
+            fseek(fp, chunk_size, SEEK_CUR);
+        }
+    }
+
+    if (data_size == 0) {
+        std::cerr << "[ERROR] No data chunk found in WAV file" << std::endl;
+        fclose(fp);
+        return -1;
+    }
+
     int num_samples = data_size / 2;  // 16-bit = 2 bytes per sample
 
     // Allocate buffer
@@ -48,10 +75,17 @@ int load_audio(const char* filename, audio_buffer_t* audio) {
         return -1;
     }
 
+    // Seek to data chunk and read
+    fseek(fp, data_pos, SEEK_SET);
+
     // Read 16-bit PCM samples and convert to float
     short* temp_buffer = (short*)malloc(data_size);
-    fread(temp_buffer, 1, data_size, fp);
+    size_t bytes_read = fread(temp_buffer, 1, data_size, fp);
     fclose(fp);
+
+    if (bytes_read != (size_t)data_size) {
+        std::cerr << "[WARN] Expected " << data_size << " bytes, got " << bytes_read << std::endl;
+    }
 
     for (int i = 0; i < num_samples; i++) {
         audio->data[i] = (float)temp_buffer[i] / 32768.0f;

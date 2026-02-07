@@ -203,7 +203,8 @@ std::string WhisperInference::run(const char* audio_file,
 
     std::cout << "\n[INFO] Running inference on: " << audio_file << std::endl;
 
-    auto start_time = std::chrono::high_resolution_clock::now();
+    auto total_start = std::chrono::high_resolution_clock::now();
+    auto t1 = total_start;
 
     // Load audio
     audio_buffer_t audio;
@@ -211,11 +212,15 @@ std::string WhisperInference::run(const char* audio_file,
         std::cerr << "[ERROR] Failed to load audio" << std::endl;
         return "";
     }
+    auto t2 = std::chrono::high_resolution_clock::now();
+    auto audio_load_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
 
     // Compute mel spectrogram
     std::vector<float> mel_spec;
     audio_preprocess(&audio, mel_filters_.data(), mel_spec);
     free_audio(&audio);
+    auto t3 = std::chrono::high_resolution_clock::now();
+    auto preprocess_time = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2);
 
     // Run encoder
     std::vector<float> encoder_output;
@@ -223,28 +228,42 @@ std::string WhisperInference::run(const char* audio_file,
         std::cerr << "[ERROR] Encoder inference failed" << std::endl;
         return "";
     }
+    auto t4 = std::chrono::high_resolution_clock::now();
+    auto encoder_time = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3);
+
+    // Determine language token
+    int language_token = WHISPER_TASK_EN;
+    if (language && strcmp(language, "zh") == 0) {
+        language_token = WHISPER_TASK_ZH;
+    }
 
     // Run decoder (autoregressive)
     std::vector<int> tokens;
-    if (!run_decoder(encoder_output, tokens)) {
+    if (!run_decoder(encoder_output, tokens, language_token)) {
         std::cerr << "[ERROR] Decoder inference failed" << std::endl;
         return "";
     }
-
-    // Determine task code
-    int task_code = WHISPER_TASK_EN;
-    if (language && strcmp(language, "zh") == 0) {
-        task_code = WHISPER_TASK_ZH;
-    }
+    auto t5 = std::chrono::high_resolution_clock::now();
+    auto decoder_time = std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4);
 
     // Decode tokens to text
-    std::string text = decode_tokens(tokens, task_code);
+    std::string text = decode_tokens(tokens, language_token);
+    auto t6 = std::chrono::high_resolution_clock::now();
+    auto decode_time = std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5);
 
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-        end_time - start_time);
+    auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(t6 - total_start);
 
-    std::cout << "[INFO] Inference completed in " << duration.count()
+    std::cout << "\n[PERF] Performance breakdown:" << std::endl;
+    std::cout << "  Audio loading:   " << audio_load_time.count() << " ms" << std::endl;
+    std::cout << "  Preprocessing:   " << preprocess_time.count() << " ms" << std::endl;
+    std::cout << "  Encoder:         " << encoder_time.count() << " ms" << std::endl;
+    std::cout << "  Decoder:         " << decoder_time.count() << " ms ("
+              << tokens.size() << " tokens)" << std::endl;
+    std::cout << "  Token decoding:  " << decode_time.count() << " ms" << std::endl;
+    std::cout << "  TOTAL:           " << total_time.count() << " ms" << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "[INFO] Inference completed in " << total_time.count()
               << " ms" << std::endl;
     std::cout << "[INFO] Result: \"" << text << "\"" << std::endl;
 
@@ -277,17 +296,20 @@ bool WhisperInference::run_encoder(const std::vector<float>& mel_spec,
 // ==================== Decoder Inference ====================
 
 bool WhisperInference::run_decoder(const std::vector<float>& encoder_output,
-                                  std::vector<int>& tokens) {
+                                  std::vector<int>& tokens,
+                                  int language_token) {
     std::cout << "[INFO] Running decoder (autoregressive greedy decoding)..." << std::endl;
 
     // Initialize token sequence with special tokens (Python style)
-    // [SOT, LANG_EN, TRANSCRIBE, NO_TIMESTAMPS]
+    // [SOT, LANGUAGE, TRANSCRIBE, NO_TIMESTAMPS]
     std::vector<int> token_sequence;
-    token_sequence.push_back(WHISPER_SOT);           // 50258
-    token_sequence.push_back(WHISPER_TASK_EN);       // 50259
-    token_sequence.push_back(WHISPER_TASK_TRANScribe); // 50359
-    token_sequence.push_back(WHISPER_SPEAKER_END);   // 50363
+    token_sequence.push_back(WHISPER_SOT);           // 50258 <|startoftranscript|>
+    token_sequence.push_back(language_token);        // 50259 <|en|> or 50260 <|zh|>
+    token_sequence.push_back(WHISPER_TASK_TRANScribe); // 50359 <|transcribe|>
+    token_sequence.push_back(WHISPER_SPEAKER_END);   // 50363 <|notimestamps|>
 
+    const char* lang_name = (language_token == WHISPER_TASK_ZH) ? "zh" : "en";
+    std::cout << "[INFO] Language: " << lang_name << " (token=" << language_token << ")" << std::endl;
     std::cout << "[INFO] Initial tokens: [" << token_sequence[0] << ", "
               << token_sequence[1] << ", " << token_sequence[2] << ", "
               << token_sequence[3] << "]" << std::endl;
@@ -301,8 +323,14 @@ bool WhisperInference::run_decoder(const std::vector<float>& encoder_output,
     int iteration = 0;
     int max_iterations = MAX_TOKENS - 4;  // Max tokens to generate
 
+    auto decoder_start = std::chrono::high_resolution_clock::now();
+    long long total_npu_time_us = 0;
+    long long total_embed_time_us = 0;
+
     while (next_token != WHISPER_EOT && iteration < max_iterations) {
         iteration++;
+
+        auto iter_start = std::chrono::high_resolution_clock::now();
 
         // Get current sequence length
         int seq_len = token_sequence.size();
@@ -318,6 +346,10 @@ bool WhisperInference::run_decoder(const std::vector<float>& encoder_output,
                      token_embeddings_padded.end(), 0.0f);
         }
 
+        auto embed_done = std::chrono::high_resolution_clock::now();
+        total_embed_time_us += std::chrono::duration_cast<std::chrono::microseconds>(
+            embed_done - iter_start).count();
+
         // Prepare decoder inputs
         std::vector<const void*> inputs;
         inputs.push_back(token_embeddings_padded.data());
@@ -328,11 +360,15 @@ bool WhisperInference::run_decoder(const std::vector<float>& encoder_output,
         outputs.push_back(logits.data());
 
         // Run decoder
+        auto npu_start = std::chrono::high_resolution_clock::now();
         if (!decoder_executor_->Run(inputs, outputs)) {
             std::cerr << "[ERROR] Decoder execution failed at iteration "
                       << iteration << std::endl;
             return false;
         }
+        auto npu_done = std::chrono::high_resolution_clock::now();
+        total_npu_time_us += std::chrono::duration_cast<std::chrono::microseconds>(
+            npu_done - npu_start).count();
 
         // Get logits at current position (last real token position, not padded)
         // Python: logits[0, len(tokens)-1, :]
@@ -362,8 +398,20 @@ bool WhisperInference::run_decoder(const std::vector<float>& encoder_output,
         }
     }
 
+    auto decoder_end = std::chrono::high_resolution_clock::now();
+    auto total_decoder_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+        decoder_end - decoder_start);
+
     std::cout << "[INFO] Decoder generated " << tokens.size()
               << " tokens in " << iteration << " iterations" << std::endl;
+    std::cout << "[PERF] Decoder breakdown:" << std::endl;
+    std::cout << "  Total decoder time:  " << total_decoder_time.count() << " ms" << std::endl;
+    std::cout << "  NPU inference time:  " << total_npu_time_us / 1000.0 << " ms ("
+              << (total_npu_time_us / 1000.0 / iteration) << " ms/iter)" << std::endl;
+    std::cout << "  Embedding lookup:    " << total_embed_time_us / 1000.0 << " ms" << std::endl;
+    std::cout << "  Overhead:            "
+              << (total_decoder_time.count() - total_npu_time_us / 1000.0 - total_embed_time_us / 1000.0)
+              << " ms" << std::endl;
 
     return true;
 }
@@ -388,21 +436,26 @@ std::string WhisperInference::decode_tokens(const std::vector<int>& tokens,
 
     std::string text;
 
+    // Decode each token (vocab tokens are base64 encoded)
     for (int token : tokens) {
         if (token >= 0 && token < VOCAB_NUM) {
-            text += vocab_[token].token;
+            std::string token_str = vocab_[token].token;
+
+            // Skip special tokens (they start with "<|")
+            if (token_str.length() >= 2 && token_str[0] == '<' && token_str[1] == '|') {
+                continue;  // Don't add special tokens to output
+            }
+
+            // Base64 decode the token
+            std::string decoded = base64_decode(token_str);
+            text += decoded;
         }
     }
 
-    // Post-processing
+    // Post-processing: BPE uses Ġ (U+0120) to represent spaces
     replace_substr(text, "\u0120", " ");
     replace_substr(text, "", "");
     replace_substr(text, "\n", "");
-
-    // Chinese text is base64 encoded
-    if (task_code == WHISPER_TASK_ZH && !text.empty()) {
-        text = base64_decode(text);
-    }
 
     return text;
 }

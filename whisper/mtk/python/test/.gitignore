@@ -1,0 +1,10 @@
+# Python测试输出管理
+# 只ignore debug目录（可重新生成）
+outputs/debug/*.npy
+outputs/debug/*.bin
+
+# 保留其他输出（作为验证基准）
+!outputs/baseline/
+!outputs/torchscript/
+!outputs/tflite/
+!outputs/dla/

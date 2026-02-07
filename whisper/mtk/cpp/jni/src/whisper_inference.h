@@ -98,10 +98,12 @@ private:
      * Run decoder inference (autoregressive)
      * @param encoder_output Encoder output [1, 1500, 512]
      * @param tokens Output token sequence
+     * @param language_token Language token (e.g., WHISPER_TASK_EN or WHISPER_TASK_ZH)
      * @return true on success
      */
     bool run_decoder(const std::vector<float>& encoder_output,
-                    std::vector<int>& tokens);
+                    std::vector<int>& tokens,
+                    int language_token = WHISPER_TASK_EN);
 
     /**
      * Decode tokens to text using vocabulary

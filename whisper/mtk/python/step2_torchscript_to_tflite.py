@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-步骤2: 将Whisper TorchScript转换为TFLite
-使用MTK Converter (直接转换，不经过ONNX)
+步骤2 (修复版): 将Whisper TorchScript转换为TFLite
+修复: Decoder输入使用INT64 token IDs而不是FLOAT32 embeddings
 """
 
 import argparse
@@ -93,23 +93,32 @@ def convert_decoder_to_tflite(
     """
     将Whisper Decoder转换为TFLite
 
-    输入1: token_embeddings [1, seq_len, 512]
-    输入2: encoder_output [1, 1500, 512]
-    输出: logits [1, seq_len, 51865]
+    修复版: 使用INT64 token IDs作为输入,而不是embeddings
+
+    输入1: token_ids [1, seq_len] (INT64) ✅ 修复
+    输入2: encoder_output [1, 1500, 512] (FLOAT32)
+    输出: logits [1, seq_len, 51865] (FLOAT32)
     """
     print("\n" + "="*70)
-    print("步骤2.2: Decoder TorchScript -> TFLite")
+    print("步骤2.2: Decoder TorchScript -> TFLite (修复版)")
     print("="*70)
     print(f"  输入: {torchscript_path}")
     print(f"  输出目录: {output_dir}")
 
-    # Decoder有两个输入
+    # Decoder有两个输入 - 修复版!
     input_shapes = [
-        [1, max_seq_len, 512],  # token_embeddings
-        [1, 1500, 512],         # encoder_output
+        [1, max_seq_len],      # ✅ token_ids (INT64) - 修复!
+        [1, 1500, 512],         # encoder_output (FLOAT32)
     ]
-    print(f"  输入1形状: {input_shapes[0]} (token_embeddings)")
-    print(f"  输入2形状: {input_shapes[1]} (encoder_output)")
+    input_types = [
+        torch.int64,            # ✅ INT64类型
+        torch.float32,
+    ]
+
+    print(f"  ⚠️  修复说明:")
+    print(f"     输入1形状: {input_shapes[0]} (token_ids, INT64)")
+    print(f"     输入2形状: {input_shapes[1]} (encoder_output, FLOAT32)")
+    print(f"     与RKNN实现一致!")
     print("="*70)
 
     # 构建输出路径
@@ -123,7 +132,7 @@ def convert_decoder_to_tflite(
         converter = mtk_converter.PyTorchConverter.from_script_module_file(
             torchscript_path,
             input_shapes=input_shapes,
-            input_types=[torch.float32, torch.float32],
+            input_types=input_types,
         )
 
         # FP32精度（不量化）
@@ -156,11 +165,11 @@ def convert_decoder_to_tflite(
 
 def main():
     parser = argparse.ArgumentParser(
-        description='步骤2: 将Whisper TorchScript转换为TFLite',
+        description='步骤2 (修复版): 将Whisper TorchScript转换为TFLite',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-  python step2_torchscript_to_tflite.py \\
+  python step2_torchscript_to_tflite_fixed.py \\
       --encoder_pt ./models/encoder_base_3000.pt \\
       --decoder_pt ./models/decoder_base_448.pt \\
       --output_dir ./models
@@ -209,15 +218,20 @@ def main():
 
     # 总结
     print("\n" + "="*70)
-    print("✓ 所有TFLite转换完成!")
+    print("✓ 所有TFLite转换完成! (修复版)")
     print("="*70)
     print(f"\n生成的文件:")
     print(f"  Encoder TFLite: {os.path.basename(encoder_tflite)}")
     print(f"  Decoder TFLite: {os.path.basename(decoder_tflite)}")
 
+    print(f"\n⚠️  重要修复:")
+    print(f"  Decoder输入从 [1, 448, 512] FLOAT32 embeddings")
+    print(f"              改为 [1, 448] INT64 token IDs")
+    print(f"  与RKNN实现一致!")
+
     print(f"\n下一步:")
-    print(f"  1. 测试TFLite: python test/test_tflite.py")
-    print(f"  2. 转换为DLA:  python step3_tflite_to_dla.py")
+    print(f"  1. 重新编译DLA: python step3_tflite_to_dla.py ...")
+    print(f"  2. 重新部署DLA到设备")
 
 
 if __name__ == '__main__':
