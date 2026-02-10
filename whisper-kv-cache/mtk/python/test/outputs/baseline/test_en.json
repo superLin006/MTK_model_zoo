@@ -1,0 +1,42 @@
+{
+  "text": "Mr. Quilter is the apostle of the middle classes, and we are glad to welcome his gospel.",
+  "segments": [
+    {
+      "id": 0,
+      "seek": 0,
+      "start": 0.0,
+      "end": 5.44,
+      "text": " Mr. Quilter is the apostle of the middle classes, and we are glad to welcome his gospel.",
+      "tokens": [
+        50364,
+        2221,
+        13,
+        2326,
+        388,
+        391,
+        307,
+        264,
+        50244,
+        295,
+        264,
+        2808,
+        5359,
+        11,
+        293,
+        321,
+        366,
+        5404,
+        281,
+        2928,
+        702,
+        14943,
+        13,
+        50636
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.21771760940551757,
+      "compression_ratio": 1.0864197530864197,
+      "no_speech_prob": 0.007447191514074802
+    }
+  ]
+}

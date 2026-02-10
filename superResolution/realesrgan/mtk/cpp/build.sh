@@ -16,7 +16,7 @@ echo "=========================================="
 
 # 配置
 ANDROID_NDK="/home/xh/Android/Ndk/android-ndk-r25c"
-MTK_NEUROPILOT_SDK="/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+MTK_NEUROPILOT_SDK="/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
 TARGET_ABI="arm64-v8a"
 TARGET_ARCH="arm64"
 

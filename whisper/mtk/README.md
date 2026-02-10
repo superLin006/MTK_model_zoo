@@ -84,7 +84,7 @@ conda activate MTK-whisper
 
 ### 运行PyTorch Baseline测试
 ```bash
-cd /home/xh/projects/MTK/whisper/mtk/python/test
+cd /home/xh/projects/MTK_models_zoo/whisper/mtk/python/test
 conda activate MTK-whisper
 python test_pytorch.py
 ```
@@ -118,7 +118,7 @@ result = test_whisper_baseline(
 
 - 官方仓库: https://github.com/openai/whisper
 - 参考实现: /home/xh/projects/rknn_model_zoo/examples/whisper
-- 目录结构参考: /home/xh/projects/MTK/superResolution/edsr/mtk
+- 目录结构参考: /home/xh/projects/MTK_models_zoo/superResolution/edsr/mtk
 
 ## 备注
 

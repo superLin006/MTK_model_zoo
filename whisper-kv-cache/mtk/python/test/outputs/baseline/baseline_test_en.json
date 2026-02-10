@@ -1,0 +1,57 @@
+{
+  "audio_file": "test_en.wav",
+  "model": "base",
+  "device": "cpu",
+  "language": "en",
+  "encoder_time": 0.3306725025177002,
+  "total_inference_time": 1.476543664932251,
+  "num_tokens": 22,
+  "text": " Mr. Quilter is the apostle of the middle classes, and we are glad to welcome his gospel.",
+  "segments": [
+    {
+      "id": 0,
+      "seek": 0,
+      "start": 0.0,
+      "end": 5.44,
+      "text": " Mr. Quilter is the apostle of the middle classes, and we are glad to welcome his gospel.",
+      "tokens": [
+        50364,
+        2221,
+        13,
+        2326,
+        388,
+        391,
+        307,
+        264,
+        50244,
+        295,
+        264,
+        2808,
+        5359,
+        11,
+        293,
+        321,
+        366,
+        5404,
+        281,
+        2928,
+        702,
+        14943,
+        13,
+        50636
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.21771760940551757,
+      "compression_ratio": 1.0864197530864197,
+      "no_speech_prob": 0.007447191514074802
+    }
+  ],
+  "model_load_time": 0.4386160373687744,
+  "kv_cache_info": "Standard Whisper API uses internal KV cache optimization for decoder",
+  "encoder_output_shape": [
+    1,
+    1500,
+    512
+  ],
+  "audio_duration_s": 30.0
+}

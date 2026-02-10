@@ -44,11 +44,11 @@ past_key: [num_layers, batch, seq_len, d_model]  # 4D
 
 ## 🔗 算子支持参考
 
-**完整算子列表**: `/home/xh/projects/MTK/.claude/doc/mtk_mdla_operators.md`
+**完整算子列表**: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_mdla_operators.md`
 
 查看完整支持列表：
 ```bash
-cat /home/xh/projects/MTK/.claude/doc/mtk_mdla_operators.md
+cat /home/xh/projects/MTK_models_zoo/.claude/doc/mtk_mdla_operators.md
 ```
 
 ---

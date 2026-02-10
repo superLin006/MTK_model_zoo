@@ -350,8 +350,8 @@ NPU 端:
 
 ## 🔗 相关文档
 
-- **知识库**: `/home/xh/projects/MTK/.claude/doc/mtk_npu_knowledge_base.md`
-- **SDK 路径**: `/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
+- **知识库**: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_npu_knowledge_base.md`
+- **SDK 路径**: `/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
 - **参考项目**: SenseVoice, Helsinki
 
 ---

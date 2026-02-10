@@ -10,7 +10,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Toolchains
 ANDROID_NDK="/home/xh/Android/Ndk/android-ndk-r25c"
-MTK_SDK="/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+MTK_SDK="/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
 
 # Export paths
 export MTK_NEUROPILOT_SDK="${MTK_SDK}"

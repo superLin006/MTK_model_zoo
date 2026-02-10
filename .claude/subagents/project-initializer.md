@@ -6,9 +6,10 @@
 
 ## 硬性约束
 
-1. **目录结构**：严格参考 `/home/xh/projects/MTK/superResolution/edsr/mtk/` 的组织方式
-2. **输出规范**：遵循 `/home/xh/projects/MTK/.claude/standards/python_output_management.md`
+1. **目录结构**：严格参考 `/home/xh/projects/MTK_models_zoo/superResolution/edsr/mtk/` 的组织方式
+2. **输出规范**：遵循 `/home/xh/projects/MTK_models_zoo/.claude/standards/python_output_management.md`
 3. **Baseline必须成功**：如果baseline测试不通过，必须修复后再返回
+4  **不生成冗余文档**：只需1个baseline.md
 
 ---
 
@@ -141,8 +142,8 @@ mkdir -p {algorithm}/mtk/.context    # Context目录
 
 ## 参考资源
 
-- 目录结构参考: `/home/xh/projects/MTK/superResolution/edsr/mtk/`
-- 输出规范: `/home/xh/projects/MTK/.claude/standards/python_output_management.md`
+- 目录结构参考: `/home/xh/projects/MTK_models_zoo/superResolution/edsr/mtk/`
+- 输出规范: `/home/xh/projects/MTK_models_zoo/.claude/standards/python_output_management.md`
 - 已有项目参考: Helsinki, SenseVoice, SuperResolution
 
 ---

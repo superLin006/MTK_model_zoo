@@ -94,7 +94,7 @@ pip install librosa
 
 # 推荐版本: neuropilot-sdk-basic-8.0.10 或更高
 # 安装路径示例
-export NEUROPILOT_SDK="/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+export NEUROPILOT_SDK="/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
 
 # 验证安装
 ls "$NEUROPILOT_SDK/host/bin/ncc-tflite"
@@ -140,7 +140,7 @@ python3 test_converted_models.py --audio ../audios/test_en.wav
 cd SenseVoice_workspace/compile
 
 # 设置 SDK 路径 (如果之前没有设置环境变量)
-NEUROPILOT_SDK="/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+NEUROPILOT_SDK="/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
 
 # 选择目标平台: MT6899 / MT6991 / MT8371
 ./compile_sensevoice_fp.sh \
@@ -282,13 +282,13 @@ A: 需要设置正确的 NeuroPilot SDK 路径：
 
 ```bash
 # 1. 确认 SDK 已安装
-ls /home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/host/bin/ncc-tflite
+ls /home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/host/bin/ncc-tflite
 
 # 2. 编译时传入正确的 SDK 路径
 ./compile_sensevoice_fp.sh \
     ../model_prepare/model/sensevoice_complete.tflite \
     MT8371 \
-    /home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk
+    /home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk
 ```
 
 **Q: 如何获取 NeuroPilot SDK？**

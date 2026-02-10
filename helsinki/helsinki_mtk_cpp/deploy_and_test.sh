@@ -6,7 +6,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEVICE_DIR="/data/local/tmp/helsinki"
 MODEL_DIR="${MODEL_DIR:-$SCRIPT_DIR/../helsinki_workspace/model_prepare/model_kvcache}"
-NEURON_LIB_DIR="${NEURON_LIB_DIR:-/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/mt8371}"
+NEURON_LIB_DIR="${NEURON_LIB_DIR:-/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/mt8371}"
 
 # Colors
 RED='\033[0;31m'

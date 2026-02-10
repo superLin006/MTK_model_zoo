@@ -21,7 +21,7 @@ PYTORCH = 0  # 0=导出模式, 1=原生模式
 ### 步骤 1: 导出 TorchScript 模型
 
 ```bash
-cd /home/xh/projects/MTK/sense-voice/SenseVoice_workspace/model_prepare
+cd /home/xh/projects/MTK_models_zoo/sense-voice/SenseVoice_workspace/model_prepare
 
 # 确保 PYTORCH=0
 cat config.py  # 应该显示: PYTORCH = 0

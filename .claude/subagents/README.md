@@ -28,7 +28,7 @@
 | 模型信息 | "带KV cache的whisper base模型" | 全部 |
 | 目标平台 | `MT8371` | python-converter, cpp-implementer |
 | Conda环境 | `MTK-whisper, python=3.10` | project-initializer, python-converter |
-| MTK SDK路径 | `/home/xh/projects/MTK/0_Toolkits/...` | python-converter, cpp-implementer |
+| MTK SDK路径 | `/home/xh/projects/MTK_models_zoo/0_Toolkits/...` | python-converter, cpp-implementer |
 | Android NDK | `/home/xh/Android/Ndk/android-ndk-r25c` | cpp-implementer |
 | 参考项目 | `/home/xh/projects/rknn_model_zoo/examples/whisper` | operator-analyst, cpp-implementer |
 | 特殊要求 | "带KV cache"、"固定形状30s" | operator-analyst, python-converter |
@@ -41,7 +41,7 @@
 启动 {subagent_name}，注入以下信息：
 
 ## 项目信息
-- 项目路径: /home/xh/projects/MTK/whisper-kv-cache
+- 项目路径: /home/xh/projects/MTK_models_zoo/whisper-kv-cache
 - 模型: OpenAI Whisper Base (带KV cache)
 - 目标平台: MT8371
 
@@ -50,7 +50,7 @@
 - 需要clone并切换: MTK-clip-encoder
 
 ## 资源路径
-- MTK SDK: /home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk
+- MTK SDK: /home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk
 - Android NDK: /home/xh/Android/Ndk/android-ndk-r25c
 - RK Whisper参考: /home/xh/projects/rknn_model_zoo/examples/whisper
 
@@ -151,9 +151,9 @@
 
 ## 配套资源
 
-- 算子列表: `/home/xh/projects/MTK/.claude/doc/mtk_mdla_operators.md`
-- 知识库: `/home/xh/projects/MTK/.claude/doc/mtk_npu_knowledge_base.md`
-- 输出规范: `/home/xh/projects/MTK/.claude/standards/python_output_management.md`
+- 算子列表: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_mdla_operators.md`
+- 知识库: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_npu_knowledge_base.md`
+- 输出规范: `/home/xh/projects/MTK_models_zoo/.claude/standards/python_output_management.md`
 
 ## 版本历史
 

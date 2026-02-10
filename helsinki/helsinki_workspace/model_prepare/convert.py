@@ -65,7 +65,7 @@ def convert_tflite(pt_path, tflite_path, input_shapes, input_types):
 
 
 def compile_dla(tflite_path, dla_path, platform):
-    sdk = "/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+    sdk = "/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
     ncc = f"{sdk}/host/bin/ncc-tflite"
 
     cfg = {

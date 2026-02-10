@@ -26,7 +26,7 @@ fi
 
 TFLITE_FILE="$1"
 PLATFORM="$2"
-SDK_PATH="${3:-/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk}"
+SDK_PATH="${3:-/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk}"
 
 # 检查TFLite文件
 if [ ! -f "$TFLITE_FILE" ]; then

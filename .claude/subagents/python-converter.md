@@ -7,10 +7,12 @@
 ## 硬性约束
 
 1. **环境**：所有Python命令使用完整路径 `/home/xh/miniconda3/envs/{环境名}/bin/python`
-2. **TorchScript→TFLite**：只用 `mtk_converter.PyTorchConverter`，禁止 ONNX/ai_edge_torch
-3. **TFLite→DLA**：只用 `{SDK}/host/bin/ncc-tflite`
-4. **固定形状**：MTK不支持动态形状，转换时必须指定固定尺寸
-5. **输出目录**：遵循 `/home/xh/projects/MTK/.claude/standards/python_output_management.md`
+2  **原始模型→TorchScript**：禁止 ONNX/ai_edge_torch 导出
+3. **TorchScript→TFLite**：只用 `mtk_converter.PyTorchConverter`，禁止 ONNX/ai_edge_torch
+4. **TFLite→DLA**：只用 `{SDK}/host/bin/ncc-tflite`
+5. **固定形状**：MTK不支持动态形状，转换时必须指定固定尺寸
+6. **输出目录**：遵循 `/home/xh/projects/MTK_models_zoo/.claude/standards/python_output_management.md`
+7  **不生成冗余文档**：只需1个简短README.md
 
 ---
 
@@ -46,7 +48,7 @@
 **做什么**：
 - 读取原始模型架构代码
 - 根据 operator_analysis.md 处理不支持的算子
-- 读取知识库 `/home/xh/projects/MTK/.claude/doc/mtk_npu_knowledge_base.md` 了解已知陷阱
+- 读取知识库 `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_npu_knowledge_base.md` 了解已知陷阱
 - 创建 `{model_name}_model.py`
 
 **常见修改**：
@@ -64,7 +66,7 @@
 ### Step 3: 创建转换脚本 + 执行转换 + 生成TorchScript
 
 **做什么**：
-- 参考 `/home/xh/projects/MTK/superResolution/edsr/mtk/python/step1_pt_to_torchscript.py`
+- 参考 `/home/xh/projects/MTK_models_zoo/superResolution/edsr/mtk/python/step1_pt_to_torchscript.py`
 - 创建 `step1_pt_to_torchscript.py`
 - 加载原始权重 → 实例化MTK模型 → `torch.jit.trace()` 导出
 - 如有Embedding分离，导出权重为 `.npy`
@@ -123,7 +125,7 @@
 ### Step 5: TorchScript → TFLite
 
 **做什么**：
-- 参考 `/home/xh/projects/MTK/superResolution/edsr/mtk/python/step2_torchscript_to_tflite.py`
+- 参考 `/home/xh/projects/MTK_models_zoo/superResolution/edsr/mtk/python/step2_torchscript_to_tflite.py`
 - 创建 `step2_torchscript_to_tflite.py`，使用 mtk_converter：
   ```python
   converter = mtk_converter.PyTorchConverter.from_script_module_file(
@@ -140,7 +142,7 @@
 **注意**：MTK TFLite含自定义算子（如MTKEXT_LAYER_NORMALIZATION），Python端无法加载测试，这是正常的。精度已在Step 4通过TorchScript验证。
 
 **失败修复**：
-- `Unsupported op` → 检查 `/home/xh/projects/MTK/.claude/doc/mtk_mdla_operators.md`，回到Step 2修改模型
+- `Unsupported op` → 检查 `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_mdla_operators.md`，回到Step 2修改模型
 - `mtk_converter not found` → 确认conda环境是否正确
 - 修改模型后必须从Step 3重新走（重新trace → 重新test → 重新转tflite）
 
@@ -149,7 +151,7 @@
 ### Step 6: TFLite → DLA
 
 **做什么**：
-- 参考 `/home/xh/projects/MTK/superResolution/edsr/mtk/python/step3_tflite_to_dla.py`
+- 参考 `/home/xh/projects/MTK_models_zoo/superResolution/edsr/mtk/python/step3_tflite_to_dla.py`
 - 创建 `step3_tflite_to_dla.py`，平台配置：
   ```
   MT8371: arch=mdla5.3,edma3.6  l1=256  mdla=1
@@ -218,11 +220,11 @@
 
 ## 参考资源
 
-- SDK: `/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
-- 算子列表: `/home/xh/projects/MTK/.claude/doc/mtk_mdla_operators.md`
-- 知识库: `/home/xh/projects/MTK/.claude/doc/mtk_npu_knowledge_base.md`
-- 输出规范: `/home/xh/projects/MTK/.claude/standards/python_output_management.md`
-- 参考项目: `/home/xh/projects/MTK/superResolution/edsr/mtk/python/`
+- SDK: `/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
+- 算子列表: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_mdla_operators.md`
+- 知识库: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_npu_knowledge_base.md`
+- 输出规范: `/home/xh/projects/MTK_models_zoo/.claude/standards/python_output_management.md`
+- 参考项目: `/home/xh/projects/MTK_models_zoo/superResolution/edsr/mtk/python/`
 
 ---
 

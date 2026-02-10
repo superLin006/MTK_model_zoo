@@ -26,7 +26,7 @@ import numpy as np
 from pathlib import Path
 
 # 添加whisper官方库路径
-sys.path.append('/home/xh/projects/MTK/whisper/whisper-official')
+sys.path.append('/home/xh/projects/MTK_models_zoo/whisper/whisper-official')
 import whisper
 
 # 导入我们的MTK模型

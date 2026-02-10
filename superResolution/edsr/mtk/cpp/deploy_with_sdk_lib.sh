@@ -13,7 +13,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Paths
 ANDROID_NDK="/home/xh/Android/Ndk/android-ndk-r25c"
-MTK_SDK="/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+MTK_SDK="/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
 SDK_LIB="$MTK_SDK/mt8371/libneuron_runtime.8.so"
 
 BINARY="$SCRIPT_DIR/jni/libs/arm64-v8a/edsr_inference"

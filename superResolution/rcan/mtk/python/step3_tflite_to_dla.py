@@ -38,7 +38,7 @@ def compile_dla(
     print("="*70)
 
     # MTK SDK路径
-    sdk_path = "/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+    sdk_path = "/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
     ncc_tool = f"{sdk_path}/host/bin/ncc-tflite"
 
     # 检查工具是否存在

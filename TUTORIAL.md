@@ -26,7 +26,7 @@
 #### (1) MTK NeuroPilot SDK
 - **版本**: 8.0.10 或更高
 - **下载地址**: [MTK NeuroPilot 官网](https://neuropilot.mediatek.com/)
-- **安装路径示例**: `/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
+- **安装路径示例**: `/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
 
 #### (2) Android NDK
 - **推荐版本**: r25c
@@ -214,15 +214,15 @@ Agent 自动工作
 **Conda 环境：** MTK-whisper，Python = 3.10，需要 clone 一份 MTK-clip-encoder，然后切换过去，安装其他的所需依赖。
 
 **其他资源目录如下：**
-- (1) MTK SDK: `/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
-- (2) 目标平台 MT8371 运行所需要到运行时库文件: `/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/mt8371`
+- (1) MTK SDK: `/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
+- (2) 目标平台 MT8371 运行所需要到运行时库文件: `/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/mt8371`
 - (3) Android NDK: `/home/xh/Android/Ndk/android-ndk-r25c`
 - (4) Android SDK: `/home/xh/Android/Sdk`
 - (5) OnnxRuntime: `/home/xh/Android/OnnxRuntime/onnxruntime-android-1.17.1`
-- (6) 第三方库文件: `/home/xh/projects/MTK/1_third_party`
-- (7) 第三方工具: `/home/xh/projects/MTK/2_utils`
-- (8) MTK DLA 支持的算子信息列表: `/home/xh/projects/MTK/.claude/doc/mtk_mdla_operators.md`
-- (9) 中央知识库（已知问题和最佳实践）: `/home/xh/projects/MTK/.claude/doc/mtk_npu_knowledge_base.md`
+- (6) 第三方库文件: `/home/xh/projects/MTK_models_zoo/1_third_party`
+- (7) 第三方工具: `/home/xh/projects/MTK_models_zoo/2_utils`
+- (8) MTK DLA 支持的算子信息列表: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_mdla_operators.md`
+- (9) 中央知识库（已知问题和最佳实践）: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_npu_knowledge_base.md`
 - (10) rk whisper 项目: `/home/xh/projects/rknn_model_zoo/examples/whisper`
 
 ---
@@ -246,7 +246,7 @@ Agent 自动工作
    - 如果导出的模型没办法正常工作，或者报错了，那么可能是算子不支持的问题
    - 就要我们自己定义模型机构或者修改算子，再重新导出来重新测试
    - 我们先像其他案例一样，按照一般的方法正常导出
-   - Helsinki 这个案例就是这么做的：`/home/xh/projects/MTK/helsinki`
+   - Helsinki 这个案例就是这么做的：`/home/xh/projects/MTK_models_zoo/helsinki`
 
 3. **固定形状限制**
    - 由于 MTK NPU 不支持动态形状
@@ -326,16 +326,16 @@ Agent 自动工作
 **Conda 环境：** MTK-superResolution，Python = 3.10，需要切换过去，安装其他的所需依赖。
 
 **其他资源目录如下：**
-- (1) MTK SDK: `/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
-- (2) 目标平台 MT8371 运行所需要到运行时库文件: `/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/mt8371`
+- (1) MTK SDK: `/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
+- (2) 目标平台 MT8371 运行所需要到运行时库文件: `/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/mt8371`
 - (3) Android NDK: `/home/xh/Android/Ndk/android-ndk-r25c`
 - (4) Android SDK: `/home/xh/Android/Sdk`
 - (5) OnnxRuntime: `/home/xh/Android/OnnxRuntime/onnxruntime-android-1.17.1`
-- (6) 第三方库文件及工具: `/home/xh/projects/MTK/1_third_party`
-- (7) 第三方工具: `/home/xh/projects/MTK/2_utils`
-- (8) MTK DLA 支持的算子信息列表: `/home/xh/projects/MTK/.claude/doc/mtk_mdla_operators.md`
-- (9) 中央知识库（已知问题和最佳实践）: `/home/xh/projects/MTK/.claude/doc/mtk_npu_knowledge_base.md`
-- (10) rk realesrgan 项目: `/home/xh/projects/MTK/superResolution/realesrgan/rknn`
+- (6) 第三方库文件及工具: `/home/xh/projects/MTK_models_zoo/1_third_party`
+- (7) 第三方工具: `/home/xh/projects/MTK_models_zoo/2_utils`
+- (8) MTK DLA 支持的算子信息列表: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_mdla_operators.md`
+- (9) 中央知识库（已知问题和最佳实践）: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_npu_knowledge_base.md`
+- (10) rk realesrgan 项目: `/home/xh/projects/MTK_models_zoo/superResolution/realesrgan/rknn`
 
 ---
 
@@ -358,7 +358,7 @@ Agent 自动工作
    - 如果导出的模型没办法正常工作，或者报错了，那么可能是算子不支持的问题
    - 就要我们自己定义模型机构或者修改算子，再重新导出来重新测试
    - 我们先像其他案例一样，按照一般的方法正常导出
-   - Helsinki 这个案例就是这么做的：`/home/xh/projects/MTK/helsinki`
+   - Helsinki 这个案例就是这么做的：`/home/xh/projects/MTK_models_zoo/helsinki`
 
 3. **固定形状限制**
    - 由于 MTK NPU 不支持动态形状

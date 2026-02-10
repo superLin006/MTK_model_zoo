@@ -1,0 +1,2 @@
+Baseline: And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.
+TorchScript: And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.

@@ -96,14 +96,14 @@ cmake .. -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake
 make -j$(nproc)
 
 # 复制到项目目录
-mkdir -p /home/xh/projects/MTK/1_third_party/kaldi_native_fbank/Android
-cp -r install/* /home/xh/projects/MTK/1_third_party/kaldi_native_fbank/Android/
+mkdir -p /home/xh/projects/MTK_models_zoo/1_third_party/kaldi_native_fbank/Android
+cp -r install/* /home/xh/projects/MTK_models_zoo/1_third_party/kaldi_native_fbank/Android/
 ```
 
 #### 2. 构建可执行程序
 
 ```bash
-cd /home/xh/projects/MTK/sense-voice/sensevoice_mtk_cpp
+cd /home/xh/projects/MTK_models_zoo/sense-voice/sensevoice_mtk_cpp
 ./build.sh
 ```
 

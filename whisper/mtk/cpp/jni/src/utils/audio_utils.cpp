@@ -328,6 +328,18 @@ void audio_preprocess(audio_buffer_t* audio, float* mel_filters,
 
     std::cout << "[INFO] Computed mel spectrogram: ["
               << N_MELS << " x " << target_cols << "]" << std::endl;
+
+    // Debug: print first 10 mel values
+    std::cout << "[DEBUG] Mel spec first 10 values: ";
+    for (int i = 0; i < 10 && i < x_mel.size(); i++) {
+        std::cout << x_mel[i] << " ";
+    }
+    std::cout << std::endl;
+
+    // Debug: print min/max
+    float mel_min = *std::min_element(x_mel.begin(), x_mel.end());
+    float mel_max = *std::max_element(x_mel.begin(), x_mel.end());
+    std::cout << "[DEBUG] Mel spec min/max: " << mel_min << " / " << mel_max << std::endl;
 }
 
 // ==================== Vocabulary ====================

@@ -58,7 +58,7 @@ adb push build/arm64-v8a/arm64-v8a/realesrgan_inference /data/local/tmp/realesrg
 adb shell chmod 755 /data/local/tmp/realesrgan/realesrgan_inference
 
 # 推送MTK运行时库
-MTK_SDK="/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+MTK_SDK="/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
 adb push $MTK_SDK/mt8371/libneuron_runtime.8.so /data/local/tmp/realesrgan/libneuron_runtime.so
 adb push $MTK_SDK/mt8371/libc++.so /data/local/tmp/realesrgan/
 adb push $MTK_SDK/mt8371/libcutils.so /data/local/tmp/realesrgan/
@@ -180,7 +180,7 @@ output[idx] = (unsigned char)(val * 255.0f + 0.5f);
 
 ## 依赖资源
 
-- MTK SDK：`/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
+- MTK SDK：`/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
 - Android NDK：`/home/xh/Android/Ndk/android-ndk-r25c`
 - Real-ESRGAN官方：https://github.com/xinntao/Real-ESRGAN
 

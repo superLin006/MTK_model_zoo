@@ -1,6 +1,6 @@
 # RCAN 测试输出目录
 
-> 符合 `/home/xh/projects/MTK/.claude/standards/python_output_management.md` 规范
+> 符合 `/home/xh/projects/MTK_models_zoo/.claude/standards/python_output_management.md` 规范
 
 ## 📁 目录结构
 

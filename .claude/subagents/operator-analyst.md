@@ -6,9 +6,10 @@
 
 ## 硬性约束
 
-1. **算子列表**：以 `/home/xh/projects/MTK/.claude/doc/mtk_mdla_operators.md` 为准
-2. **解决方案**：以 `/home/xh/projects/MTK/.claude/doc/mtk_npu_knowledge_base.md` 中的实战经验为准
-3. **必须给出具体代码级修改建议**，不能只说"需要修改"
+1. **算子列表**：以 `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_mdla_operators.md` 为准
+2. **解决方案**：以 `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_npu_knowledge_base.md` 中的实战经验为准
+3. **必须给出修改建议**，不能只说"需要修改"，要具体到代码级，但是代码要简要，不要过于冗余
+4  **不生成冗余文档**：只需1个operator_analysis.md
 
 ---
 
@@ -41,7 +42,7 @@
 ### Step 2: 对照算子支持列表
 
 **做什么**：
-- 读取 `/home/xh/projects/MTK/.claude/doc/mtk_mdla_operators.md`
+- 读取 `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_mdla_operators.md`
 - 逐个检查模型使用的算子是否支持
 - 分为三类：支持 / 有限制 / 不支持
 
@@ -50,7 +51,7 @@
 ### Step 3: 查询知识库中的解决方案
 
 **做什么**：
-- 读取 `/home/xh/projects/MTK/.claude/doc/mtk_npu_knowledge_base.md`
+- 读取 `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_npu_knowledge_base.md`
 - 对每个不支持的算子，查找已有解决方案
 - 如果有类似模型的参考项目，读取其修改方式
 
@@ -123,8 +124,8 @@ class xxx:
 - 风险点说明: ...
 
 ## 参考项目
-- Helsinki: /home/xh/projects/MTK/helsinki/
-- SenseVoice: /home/xh/projects/MTK/sense-voice/
+- Helsinki: /home/xh/projects/MTK_models_zoo/helsinki/
+- SenseVoice: /home/xh/projects/MTK_models_zoo/sense-voice/
 ```
 
 **验证**：文件成功写入，内容完整。
@@ -144,10 +145,10 @@ class xxx:
 
 ## 参考资源
 
-- 算子列表: `/home/xh/projects/MTK/.claude/doc/mtk_mdla_operators.md`
-- 知识库: `/home/xh/projects/MTK/.claude/doc/mtk_npu_knowledge_base.md`
-- Helsinki参考: `/home/xh/projects/MTK/helsinki/`（Encoder-Decoder + KV Cache）
-- SenseVoice参考: `/home/xh/projects/MTK/sense-voice/`（ASR Encoder-only）
+- 算子列表: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_mdla_operators.md`
+- 知识库: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_npu_knowledge_base.md`
+- Helsinki参考: `/home/xh/projects/MTK_models_zoo/helsinki/`（Encoder-Decoder + KV Cache）
+- SenseVoice参考: `/home/xh/projects/MTK_models_zoo/sense-voice/`（ASR Encoder-only）
 
 ---
 

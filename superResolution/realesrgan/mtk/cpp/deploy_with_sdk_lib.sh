@@ -15,7 +15,7 @@ echo "Real-ESRGAN Deploy Script"
 echo "=========================================="
 
 # 配置
-MTK_NEUROPILOT_SDK="/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+MTK_NEUROPILOT_SDK="/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
 TARGET_ABI="arm64-v8a"
 TARGET_PLATFORM="mt8371"  # mt8371, mt6899, mt6991
 DEVICE_DIR="/data/local/tmp/realesrgan"

@@ -89,7 +89,7 @@ python3 test_converted_models.py \
 # https://vendor.mediatek.com/
 
 # SDK 安装路径示例
-NEUROPILOT_SDK="/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+NEUROPILOT_SDK="/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
 ```
 
 编译 DLA 模型:
@@ -249,13 +249,13 @@ A: 需要设置正确的 NeuroPilot SDK 路径：
 
 ```bash
 # 1. 确认 SDK 已安装
-ls /home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/host/bin/ncc-tflite
+ls /home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/host/bin/ncc-tflite
 
 # 2. 编译时传入正确的 SDK 路径
 ./compile_sensevoice_fp.sh \
     ../model_prepare/model/sensevoice_complete.tflite \
     MT8371 \
-    /home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk
+    /home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk
 ```
 
 **Q: 如何获取 NeuroPilot SDK？**

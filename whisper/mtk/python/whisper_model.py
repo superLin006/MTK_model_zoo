@@ -511,7 +511,7 @@ def create_whisper_mtk_models(whisper_model):
 def test_mtk_models():
     """测试MTK模型的前向传播"""
     import sys
-    sys.path.append('/home/xh/projects/MTK/whisper/whisper-official')
+    sys.path.append('/home/xh/projects/MTK_models_zoo/whisper/whisper-official')
     import whisper
 
     print("\n" + "="*70)
@@ -520,8 +520,8 @@ def test_mtk_models():
 
     # 加载原始模型
     print("\nLoading original Whisper model...")
-    model_path = "/home/xh/projects/MTK/whisper/mtk/models/base.pt"
-    whisper_model = whisper.load_model("base", download_root="/home/xh/projects/MTK/whisper/mtk/models", device="cpu")
+    model_path = "/home/xh/projects/MTK_models_zoo/whisper/mtk/models/base.pt"
+    whisper_model = whisper.load_model("base", download_root="/home/xh/projects/MTK_models_zoo/whisper/mtk/models", device="cpu")
     dims = whisper_model.dims
 
     print(f"Model dimensions:")

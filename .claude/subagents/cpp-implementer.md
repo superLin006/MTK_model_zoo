@@ -21,6 +21,7 @@
 
 ### 读取的 Context
 ```
+{project}/mtk/.context/operator_analysis.md    # operator-analyst 生成的算子分析和修改方案（可选，需要在读取）
 {project}/mtk/python/test/outputs/debug/    # python-converter 生成的debug输出
 ```
 
@@ -63,7 +64,7 @@
 
 **目录结构（严格遵循）**：
 ```
-{project}/cpp/
+{project}/mtk/cpp/
 ├── jni/
 │   ├── Android.mk
 │   ├── Application.mk
@@ -82,16 +83,16 @@
 ```
 
 **做什么**：
-- 参考 `/home/xh/projects/MTK/superResolution/edsr/mtk/cpp/` 创建骨架
+- 参考 `/home/xh/projects/MTK_models_zoo/superResolution/edsr/mtk/cpp/` 创建骨架
 - neuron_executor 直接复用EDSR的实现
 - Android.mk 参考EDSR的写法，注意：
   - 源文件路径用 `src/xxx.cpp`（相对于jni/）
   - 头文件include用 `$(LOCAL_PATH)/src`
   - 不要用 `../` 跳出jni目录
-- 如需第三方库（如fftw），参考 `/home/xh/projects/MTK/1_third_party/`
+- 如需第三方库（如fftw），参考 `/home/xh/projects/MTK_models_zoo/1_third_party/`
 
 **创建 build_android.sh**：
-参考 `/home/xh/projects/MTK/superResolution/edsr/mtk/cpp/build_android.sh`，模板：
+参考 `/home/xh/projects/MTK_models_zoo/superResolution/edsr/mtk/cpp/build_android.sh`，模板：
 ```bash
 #!/bin/bash
 
@@ -99,7 +100,7 @@
 export NDK_ROOT=/home/xh/Android/Ndk/android-ndk-r25c
 
 # MTK SDK头文件（编译时需要）
-export MTK_SDK=/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk
+export MTK_SDK=/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk
 
 # 清理旧构建
 ndk-build -C jni clean
@@ -288,7 +289,7 @@ adb push models/*.npy /data/local/tmp/{model}_test/   # embedding等权重
 adb push test_data/* /data/local/tmp/{model}_test/
 
 # 推送MTK运行时库
-MTK_LIB=/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/mt8371/lib
+MTK_LIB=/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/mt8371/lib
 adb push $MTK_LIB/*.so /data/local/tmp/{model}_test/
 
 # 设置权限
@@ -370,16 +371,16 @@ adb shell "cd /data/local/tmp/{model}_test && \
 
 ## 参考资源
 
-- EDSR C++参考: `/home/xh/projects/MTK/superResolution/edsr/mtk/cpp/`
-- Helsinki C++参考: `/home/xh/projects/MTK/helsinki/helsinki_mtk_cpp/`
-- SenseVoice C++参考: `/home/xh/projects/MTK/sense-voice/sensevoice_mtk_cpp/`
-- MTK SDK: `/home/xh/projects/MTK/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
+- EDSR C++参考: `/home/xh/projects/MTK_models_zoo/superResolution/edsr/mtk/cpp/`
+- Helsinki C++参考: `/home/xh/projects/MTK_models_zoo/helsinki/helsinki_mtk_cpp/`
+- SenseVoice C++参考: `/home/xh/projects/MTK_models_zoo/sense-voice/sensevoice_mtk_cpp/`
+- MTK SDK: `/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk`
 - SDK头文件: `{SDK}/host/include/`
 - SDK运行时库: `{SDK}/mt8371/lib/`
 - Android NDK: `/home/xh/Android/Ndk/android-ndk-r25c`
-- 第三方库: `/home/xh/projects/MTK/1_third_party/`
+- 第三方库: `/home/xh/projects/MTK_models_zoo/1_third_party/`
 - Python端debug输出: `{project}/mtk/python/test/outputs/debug/`
-- 知识库: `/home/xh/projects/MTK/.claude/doc/mtk_npu_knowledge_base.md`
+- 知识库: `/home/xh/projects/MTK_models_zoo/.claude/doc/mtk_npu_knowledge_base.md`
 
 ---
 

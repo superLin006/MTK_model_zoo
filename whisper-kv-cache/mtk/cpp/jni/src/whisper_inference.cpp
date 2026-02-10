@@ -74,13 +74,13 @@ int WhisperInference::init(const char* model_dir) {
     }
 
     // Load encoder DLA
-    if (!load_encoder_dla(base_dir + "/encoder.dla")) {
+    if (!load_encoder_dla(base_dir + "/encoder_base_80x3000_MT8371.dla")) {
         std::cerr << "[ERROR] Failed to load encoder DLA" << std::endl;
         return -1;
     }
 
     // Load decoder DLA
-    if (!load_decoder_dla(base_dir + "/decoder_kv.dla")) {
+    if (!load_decoder_dla(base_dir + "/decoder_base_448_MT8371.dla")) {
         std::cerr << "[ERROR] Failed to load decoder DLA" << std::endl;
         return -1;
     }
