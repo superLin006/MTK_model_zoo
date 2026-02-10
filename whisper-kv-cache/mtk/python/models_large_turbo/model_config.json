@@ -1,0 +1,10 @@
+{
+  "model_name": "large-v3-turbo",
+  "n_mels": 128,
+  "d_model": 1280,
+  "num_decoder_layers": 4,
+  "vocab_size": 51866,
+  "max_cache_len": 448,
+  "encoder_dla": "encoder_large-v3-turbo_128x3000_MT8371.dla",
+  "decoder_dla": "decoder_large-v3-turbo_448_MT8371.dla"
+}

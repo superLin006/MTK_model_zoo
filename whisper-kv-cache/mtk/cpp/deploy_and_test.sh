@@ -16,7 +16,7 @@ echo "========================================"
 
 # Configuration
 DEVICE_DIR="/data/local/tmp/whisper_kv_test"
-MODELS_DIR="/home/xh/projects/MTK_models_zoo/whisper-kv-cache/mtk/models"
+MODELS_DIR="/home/xh/projects/MTK_models_zoo/whisper-kv-cache/mtk/python/models_large_turbo"
 TEST_DATA_DIR="/home/xh/projects/MTK_models_zoo/whisper-kv-cache/mtk/test_data"
 MTK_LIB_DIR="/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/host/lib"
 
@@ -33,15 +33,15 @@ echo "[INFO] Pushing executable..."
 adb push jni/libs/arm64-v8a/whisper_kv_test $DEVICE_DIR/
 
 echo "[INFO] Pushing DLA models..."
-adb push $MODELS_DIR/encoder_base_80x3000_MT8371.dla $DEVICE_DIR/
-adb push $MODELS_DIR/decoder_base_448_MT8371.dla $DEVICE_DIR/
+adb push $MODELS_DIR/encoder_large-v3-turbo_128x3000_MT8371.dla $DEVICE_DIR/
+adb push $MODELS_DIR/decoder_large-v3-turbo_448_MT8371.dla $DEVICE_DIR/
 
 echo "[INFO] Pushing embeddings..."
 adb push $MODELS_DIR/token_embedding.npy $DEVICE_DIR/
 adb push $MODELS_DIR/position_embedding.npy $DEVICE_DIR/
 
 echo "[INFO] Pushing mel filters and vocab..."
-adb push $MODELS_DIR/mel_80_filters.txt $DEVICE_DIR/
+adb push $MODELS_DIR/mel_128_filters.txt $DEVICE_DIR/
 adb push $MODELS_DIR/vocab.txt $DEVICE_DIR/
 
 echo "[INFO] Pushing test audio files..."

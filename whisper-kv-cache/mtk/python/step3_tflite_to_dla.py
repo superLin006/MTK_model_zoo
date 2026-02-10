@@ -16,10 +16,11 @@ Output:
 """
 
 import os
+import argparse
 import subprocess
 
 
-def compile_tflite_to_dla(tflite_path, dla_path, model_name):
+def compile_tflite_to_dla(tflite_path, dla_path, model_name, relax_fp32=True):
     """Compile TFLite to DLA using ncc-tflite"""
     print("\n" + "="*70)
     print(f"Compiling {model_name}: TFLite → DLA")
@@ -45,10 +46,11 @@ def compile_tflite_to_dla(tflite_path, dla_path, model_name):
 
     # Compilation flags
     compile_flags = [
-        "--relax-fp32",      # Relax FP32 precision constraints
         "--opt-accuracy",    # Optimize for accuracy
         "--opt-footprint",   # Optimize memory footprint
     ]
+    if relax_fp32:
+        compile_flags.insert(0, "--relax-fp32")
 
     print(f"\nInput: {tflite_path}")
     print(f"Output: {dla_path}")
@@ -107,20 +109,32 @@ def compile_tflite_to_dla(tflite_path, dla_path, model_name):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Compile Whisper TFLite models to DLA for MT8371")
+    parser.add_argument("--model", default="base", help="Model name (e.g. base, large-v3-turbo)")
+    parser.add_argument("--n-mels", type=int, default=80, help="Mel spectrogram channels (default: 80 for base, 128 for large-v3-turbo)")
+    parser.add_argument("--models-dir", default="models", help="Directory with TFLite models (default: models)")
+    args = parser.parse_args()
+
+    model_name = args.model
+    models_dir = args.models_dir
+
     print("="*70)
-    print("Whisper KV Cache: TFLite → DLA Compilation")
+    print(f"Whisper {model_name}: TFLite → DLA Compilation")
     print("Target: MT8371 (MDLA 5.3)")
     print("="*70)
 
-    models_dir = "models"
     success = True
 
-    # Compile encoder
+    encoder_stem = f"encoder_{model_name}_{args.n_mels}x3000_MT8371"
+    decoder_stem = f"decoder_{model_name}_448_MT8371"
+
+    # Compile encoder (no relax-fp32 for better accuracy with deep encoder)
     try:
         compile_tflite_to_dla(
-            os.path.join(models_dir, "encoder_base_80x3000_MT8371.tflite"),
-            os.path.join(models_dir, "encoder_base_80x3000_MT8371.dla"),
-            "Encoder"
+            os.path.join(models_dir, f"{encoder_stem}.tflite"),
+            os.path.join(models_dir, f"{encoder_stem}.dla"),
+            "Encoder",
+            relax_fp32=False
         )
     except Exception as e:
         print(f"\nEncoder compilation failed: {e}")
@@ -129,8 +143,8 @@ def main():
     # Compile decoder
     try:
         compile_tflite_to_dla(
-            os.path.join(models_dir, "decoder_base_448_MT8371.tflite"),
-            os.path.join(models_dir, "decoder_base_448_MT8371.dla"),
+            os.path.join(models_dir, f"{decoder_stem}.tflite"),
+            os.path.join(models_dir, f"{decoder_stem}.dla"),
             "Decoder with KV Cache"
         )
     except Exception as e:
@@ -147,22 +161,15 @@ def main():
 
     if success:
         print("\nGenerated DLA models:")
-        for filename in ["encoder_base_80x3000_MT8371.dla", "decoder_base_448_MT8371.dla"]:
-            filepath = os.path.join(models_dir, filename)
+        for stem in [encoder_stem, decoder_stem]:
+            filepath = os.path.join(models_dir, f"{stem}.dla")
             if os.path.exists(filepath):
                 size_mb = os.path.getsize(filepath) / 1024 / 1024
                 print(f"  ✓ {filepath} ({size_mb:.2f} MB)")
 
-        print("\nAll model files:")
-        print(f"  models/encoder_base_80x3000_MT8371.dla - Encoder for NPU")
-        print(f"  models/decoder_base_448_MT8371.dla - Decoder with KV cache for NPU")
-        print(f"  models/token_embedding.npy - Token embedding weights for C++")
-        print(f"  models/embedding_info.json - Metadata")
-
         print("\nNext steps:")
         print("  1. Copy DLA models and embedding weights to target device")
-        print("  2. Implement C++ inference with KV cache management")
-        print("  3. Test on MT8371 hardware")
+        print("  2. Test on MT8371 hardware")
 
     return 0 if success else 1
 

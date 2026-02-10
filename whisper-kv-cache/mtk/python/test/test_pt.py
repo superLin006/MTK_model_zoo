@@ -17,6 +17,7 @@ Validation criteria:
 
 import os
 import sys
+import argparse
 import torch
 import numpy as np
 import json
@@ -28,7 +29,6 @@ import whisper
 
 # Setup paths
 SCRIPT_DIR = Path(__file__).parent
-MODELS_DIR = SCRIPT_DIR.parent / "models"
 TEST_DATA_DIR = Path("/home/xh/projects/MTK_models_zoo/whisper-kv-cache/mtk/test_data")
 OUTPUT_DIR = SCRIPT_DIR / "outputs"
 BASELINE_DIR = OUTPUT_DIR / "baseline"
@@ -41,24 +41,36 @@ for d in [BASELINE_DIR, TORCHSCRIPT_DIR, DEBUG_DIR]:
 
 
 class WhisperKVCacheTester:
-    def __init__(self):
+    def __init__(self, model_name, models_dir, model_path=None):
         print("="*70)
-        print("Whisper KV Cache TorchScript Test")
+        print(f"Whisper {model_name} KV Cache TorchScript Test")
         print("="*70)
+
+        models_dir = Path(models_dir)
+
+        # Read n_mels from model_config.json if available, else default to 80
+        config_path = models_dir / "model_config.json"
+        n_mels = 80
+        if config_path.exists():
+            with open(config_path) as f:
+                cfg = json.load(f)
+            n_mels = cfg.get("n_mels", 80)
 
         # Load TorchScript models
         print("\n[1/4] Loading TorchScript models...")
-        self.encoder = torch.jit.load(MODELS_DIR / "encoder_base_80x3000_MT8371.pt")
-        self.decoder = torch.jit.load(MODELS_DIR / "decoder_base_448_MT8371.pt")
+        encoder_pt = models_dir / f"encoder_{model_name}_{n_mels}x3000_MT8371.pt"
+        decoder_pt = models_dir / f"decoder_{model_name}_448_MT8371.pt"
+        self.encoder = torch.jit.load(encoder_pt)
+        self.decoder = torch.jit.load(decoder_pt)
         self.encoder.eval()
         self.decoder.eval()
-        print(f"  ✓ Encoder loaded: {MODELS_DIR / 'encoder.pt'}")
-        print(f"  ✓ Decoder loaded: {MODELS_DIR / 'decoder_kv.pt'}")
+        print(f"  ✓ Encoder loaded: {encoder_pt}")
+        print(f"  ✓ Decoder loaded: {decoder_pt}")
 
         # Load embedding weights
         print("\n[2/4] Loading embedding weights...")
-        self.token_embedding = np.load(MODELS_DIR / "token_embedding.npy")
-        with open(MODELS_DIR / "embedding_info.json", "r") as f:
+        self.token_embedding = np.load(models_dir / "token_embedding.npy")
+        with open(models_dir / "embedding_info.json", "r") as f:
             self.embedding_info = json.load(f)
 
         print(f"  ✓ Token embedding: {self.token_embedding.shape}")
@@ -66,23 +78,29 @@ class WhisperKVCacheTester:
 
         # Load baseline model
         print("\n[3/4] Loading baseline Whisper model...")
-        self.baseline_model = whisper.load_model(
-            "base",
-            download_root="/home/xh/projects/MTK_models_zoo/whisper/mtk/models",
-            device="cpu"
-        )
+        if model_path:
+            self.baseline_model = whisper.load_model(model_path, device="cpu")
+        else:
+            self.baseline_model = whisper.load_model(
+                model_name,
+                download_root="/home/xh/projects/MTK_models_zoo/whisper/mtk/models",
+                device="cpu"
+            )
         self.baseline_model.eval()
         print(f"  ✓ Baseline model loaded")
 
-        # Model dimensions
+        # Model dimensions (from baseline model)
         self.dims = self.baseline_model.dims
         self.max_cache_len = 448
         self.n_layers = self.dims.n_text_layer
+        # vocab_size from actual model dims, not hardcoded
+        self.vocab_size = self.dims.n_vocab
 
         print("\n[4/4] Configuration:")
         print(f"  Max cache length: {self.max_cache_len}")
         print(f"  Decoder layers: {self.n_layers}")
         print(f"  Model state: {self.dims.n_text_state}")
+        print(f"  Vocab size: {self.vocab_size}")
 
     def embed_tokens(self, token_ids):
         """Manual token embedding lookup (simulates C++ behavior)"""
@@ -201,8 +219,8 @@ class WhisperKVCacheTester:
                 if step == 0:
                     print(f"  DEBUG: First generated token ID: {next_token}")
 
-                # Check for end of text
-                EOT_TOKEN = 50257
+                # Check for end of text (EOT = vocab_size - n_special; use tokenizer EOT id)
+                EOT_TOKEN = self.baseline_model.tokenizer.eot if hasattr(self.baseline_model, 'tokenizer') else (self.vocab_size - 1)
                 if next_token == EOT_TOKEN:
                     print(f"  Generated {step} text tokens (EOT reached)")
                     break
@@ -275,7 +293,7 @@ class WhisperKVCacheTester:
         # Load and preprocess audio
         audio = whisper.load_audio(str(audio_path))
         audio = whisper.pad_or_trim(audio)
-        mel = whisper.log_mel_spectrogram(audio).unsqueeze(0)
+        mel = whisper.log_mel_spectrogram(audio, n_mels=self.dims.n_mels).unsqueeze(0)
 
         # Save preprocessed mel
         np.save(DEBUG_DIR / f"{test_name}_mel_spectrogram.npy", mel.cpu().numpy())
@@ -304,8 +322,11 @@ class WhisperKVCacheTester:
         from whisper.tokenizer import get_tokenizer
         tokenizer = get_tokenizer(multilingual=True)
 
-        # Remove initial tokens and EOT
-        text_tokens = [t for t in generated_tokens[len(initial_tokens):] if t < 50257]
+        # Remove initial tokens and special tokens (keep only text tokens)
+        # Special tokens start at whisper.tokenizer.special_tokens_start or n_vocab - n_special
+        tokenizer_obj = get_tokenizer(multilingual=True)
+        special_start = tokenizer_obj.eot  # EOT is the first special token
+        text_tokens = [t for t in generated_tokens[len(initial_tokens):] if t < special_start]
         torchscript_text = tokenizer.decode(text_tokens).strip()
 
         print(f"  Text: {torchscript_text}")
@@ -404,7 +425,15 @@ class WhisperKVCacheTester:
 
 
 def main():
-    tester = WhisperKVCacheTester()
+    parser = argparse.ArgumentParser(description="Test Whisper KV Cache TorchScript models")
+    parser.add_argument("--model", default="base", help="Model name (e.g. base, large-v3-turbo)")
+    parser.add_argument("--models-dir", default=None, help="Directory with TorchScript models (default: ../models relative to this script)")
+    parser.add_argument("--model-path", default=None, help="Path to local model file for baseline; if omitted, downloads by name")
+    args = parser.parse_args()
+
+    models_dir = args.models_dir if args.models_dir else str(SCRIPT_DIR.parent / "models")
+
+    tester = WhisperKVCacheTester(args.model, models_dir, model_path=args.model_path)
     success = tester.run_all_tests()
 
     sys.exit(0 if success else 1)

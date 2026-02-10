@@ -54,7 +54,7 @@ int WhisperInference::init(const char* model_dir) {
     }
 
     // Load mel filters
-    if (!load_mel_filters(base_dir + "/mel_80_filters.txt")) {
+    if (!load_mel_filters(base_dir + "/mel_128_filters.txt")) {
         std::cerr << "[WARN] Failed to load mel filters, using placeholder" << std::endl;
         // Create placeholder mel filters (80 x 201)
         mel_filters_.resize(N_MELS * MELS_FILTERS_SIZE);
@@ -74,13 +74,13 @@ int WhisperInference::init(const char* model_dir) {
     }
 
     // Load encoder DLA
-    if (!load_encoder_dla(base_dir + "/encoder_base_80x3000_MT8371.dla")) {
+    if (!load_encoder_dla(base_dir + "/encoder_large-v3-turbo_128x3000_MT8371.dla")) {
         std::cerr << "[ERROR] Failed to load encoder DLA" << std::endl;
         return -1;
     }
 
     // Load decoder DLA
-    if (!load_decoder_dla(base_dir + "/decoder_base_448_MT8371.dla")) {
+    if (!load_decoder_dla(base_dir + "/decoder_large-v3-turbo_448_MT8371.dla")) {
         std::cerr << "[ERROR] Failed to load decoder DLA" << std::endl;
         return -1;
     }
@@ -200,13 +200,13 @@ bool WhisperInference::load_vocab(const std::string& path) {
 bool WhisperInference::load_encoder_dla(const std::string& path) {
     std::cout << "[INFO] Loading encoder DLA: " << path << std::endl;
 
-    // Encoder: Input [1, 80, 3000], Output [1, 1500, 512]
+    // Encoder: Input [1, N_MELS, 3000], Output [1, 1500, d_model_]
     std::vector<std::vector<uint32_t>> input_shapes = {
-        {1, 80, 3000}  // mel spectrogram
+        {1, N_MELS, 3000}  // mel spectrogram
     };
 
     std::vector<std::vector<uint32_t>> output_shapes = {
-        {1, 1500, 512}  // encoder output
+        {1, 1500, (uint32_t)d_model_}  // encoder output
     };
 
     encoder_executor_ = std::make_unique<NeuronExecutor>(
@@ -324,6 +324,11 @@ std::string WhisperInference::run(const char* audio_file,
     auto t3 = std::chrono::high_resolution_clock::now();
     auto preprocess_time = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2);
 
+    if (debug_mode_) {
+        FILE* f = fopen("npu_mel_spec.bin", "wb");
+        if (f) { fwrite(mel_spec.data(), sizeof(float), mel_spec.size(), f); fclose(f); }
+    }
+
     // Run encoder
     std::vector<float> encoder_output;
     if (!run_encoder(mel_spec, encoder_output)) {
@@ -333,10 +338,15 @@ std::string WhisperInference::run(const char* audio_file,
     auto t4 = std::chrono::high_resolution_clock::now();
     auto encoder_time = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3);
 
-    // Determine language token
-    int language_token = WHISPER_TASK_EN;
-    if (language && strcmp(language, "zh") == 0) {
-        language_token = WHISPER_TASK_ZH;
+    // Determine language token (whisper multilingual token IDs)
+    int language_token = WHISPER_TASK_EN;  // default: en=50259
+    if (language) {
+        if      (strcmp(language, "zh") == 0) language_token = 50260;
+        else if (strcmp(language, "de") == 0) language_token = 50261;
+        else if (strcmp(language, "es") == 0) language_token = 50262;
+        else if (strcmp(language, "fr") == 0) language_token = 50265;
+        else if (strcmp(language, "ja") == 0) language_token = 50266;
+        // en=50259 is the default above
     }
 
     // Run decoder (autoregressive)
@@ -435,7 +445,7 @@ bool WhisperInference::run_encoder(const std::vector<float>& mel_spec,
     std::vector<const void*> inputs = {mel_spec.data()};
 
     // Prepare output buffer
-    encoder_output.resize(1 * 1500 * 512);
+    encoder_output.resize(1 * 1500 * d_model_);
     std::vector<void*> outputs = {encoder_output.data()};
 
     // Run inference
@@ -444,7 +454,7 @@ bool WhisperInference::run_encoder(const std::vector<float>& mel_spec,
         return false;
     }
 
-    std::cout << "[INFO] Encoder output shape: [1, 1500, 512]" << std::endl;
+    std::cout << "[INFO] Encoder output shape: [1, 1500, " << d_model_ << "]" << std::endl;
 
     // Debug: Print encoder output statistics
     float min_val = encoder_output[0], max_val = encoder_output[0], sum = 0.0f;
@@ -454,13 +464,20 @@ bool WhisperInference::run_encoder(const std::vector<float>& mel_spec,
         sum += encoder_output[i];
     }
     float mean = sum / encoder_output.size();
-// DEBUG_CONVERT:     std::cout << "[DEBUG] Encoder output: min=" << min_val << ", max=" << max_val
-// DEBUG_CONVERT:               << ", mean=" << mean << std::endl;
-// DEBUG_CONVERT:     std::cout << "[DEBUG] First 10 encoder values: ";
-// DEBUG_CONVERT:     for (int i = 0; i < 10; i++) {
-// DEBUG_CONVERT:         std::cout << encoder_output[i] << " ";
-// DEBUG_CONVERT:     }
-// DEBUG_CONVERT:     std::cout << std::endl;
+    if (debug_mode_) {
+        std::cout << "[DEBUG] Encoder output: min=" << min_val << ", max=" << max_val
+                  << ", mean=" << mean << std::endl;
+        std::cout << "[DEBUG] First 10 encoder values: ";
+        for (int i = 0; i < 10; i++) std::cout << encoder_output[i] << " ";
+        std::cout << std::endl;
+        // Save encoder output as raw binary for Python comparison
+        FILE* f = fopen("npu_encoder_output.bin", "wb");
+        if (f) {
+            fwrite(encoder_output.data(), sizeof(float), encoder_output.size(), f);
+            fclose(f);
+            std::cout << "[DEBUG] Saved NPU encoder output to npu_encoder_output.bin" << std::endl;
+        }
+    }
 
     return true;
 }
@@ -475,13 +492,19 @@ bool WhisperInference::run_decoder(const std::vector<float>& encoder_output,
     // Reset KV cache for new inference
     reset_kv_cache();
 
-    // Initialize token sequence with special tokens (Python style)
-    // [SOT, LANGUAGE, TRANSCRIBE, NO_TIMESTAMPS]
+    // Initialize token sequence based on model variant:
+    // large-v3-turbo: [SOT, lang, SOT_LM(50360), TIMESTAMP_BEGIN(50364)]
+    // base:           [SOT, lang, TRANSCRIBE(50359), NO_TIMESTAMPS(50363)]
     std::vector<int> initial_tokens;
-    initial_tokens.push_back(WHISPER_SOT);              // 50258 <|startoftranscript|>
-    initial_tokens.push_back(language_token);           // 50259 <|en|> or 50260 <|zh|>
-    initial_tokens.push_back(WHISPER_TASK_TRANScribe);  // 50359 <|transcribe|>
-    initial_tokens.push_back(WHISPER_SPEAKER_END);      // 50363 <|notimestamps|>
+    initial_tokens.push_back(WHISPER_SOT);
+    initial_tokens.push_back(language_token);
+#if WHISPER_MODEL_VARIANT == WHISPER_MODEL_LARGE_V3_TURBO
+    initial_tokens.push_back(WHISPER_SOT_LM);
+    initial_tokens.push_back(WHISPER_TIMESTAMP_BEGIN);
+#else  // WHISPER_MODEL_BASE
+    initial_tokens.push_back(WHISPER_TRANSCRIBE);
+    initial_tokens.push_back(WHISPER_NO_TIMESTAMPS);
+#endif
 
     const char* lang_name = (language_token == WHISPER_TASK_ZH) ? "zh" : "en";
     std::cout << "[INFO] Language: " << lang_name << " (token=" << language_token << ")" << std::endl;
@@ -610,42 +633,31 @@ bool WhisperInference::run_decoder(const std::vector<float>& encoder_output,
         std::cout << std::endl;
     }
 
-    // Find argmax and check specific tokens
-    int argmax_idx = 0;
-    float argmax_val = logits[0];
-    for (int i = 1; i < VOCAB_NUM; i++) {
-        if (logits[i] > argmax_val) {
-            argmax_val = logits[i];
-            argmax_idx = i;
-        }
-    }
-// DEBUG_CONVERT:     std::cout << "[DEBUG] Argmax token: " << argmax_idx << ", value: " << argmax_val << std::endl;
-// DEBUG_CONVERT:     std::cout << "[DEBUG] EOT token (50257) value: " << logits[50257] << std::endl;
-// DEBUG_CONVERT:     std::cout << "[DEBUG] Token 370 value: " << logits[370] << std::endl;
+    DEBUG_LOG("EOT token (50257) value: " << logits[50257]);
 
     std::cout << "[INFO] Phase 2: Generating text tokens (max " << (max_cache_len_ - cache_len_) << ")..." << std::endl;
 
     // Phase 2: Autoregressive generation
+    // Following whisper's decoding logic:
+    // - Always suppress special tokens (> EOT: sot_lm=50360, sot_prev=50361, etc.)
+    // - On first generated token, also suppress EOT and blank (SuppressBlank)
+    //   to prevent empty transcription
     int max_iterations = max_cache_len_ - cache_len_;
     int iteration = 0;
 
     while (iteration < max_iterations) {
         auto iter_start = std::chrono::high_resolution_clock::now();
 
-        // Get next token from previous logits
+        // Get next token: suppress all special tokens (> EOT)
         int max_idx = 0;
-        float max_val = logits[0];
-        for (int i = 1; i < VOCAB_NUM; i++) {
-            if (logits[i] > max_val) {
-                max_val = logits[i];
-                max_idx = i;
-            }
+        float max_val = -1e30f;
+        for (int i = 0; i <= WHISPER_EOT; i++) {
+            if (logits[i] > max_val) { max_val = logits[i]; max_idx = i; }
         }
 
         int next_token = max_idx;
 
-// DEBUG_CONVERT:         std::cout << "[DEBUG] Iteration " << iteration << ": next_token=" << next_token
-// DEBUG_CONVERT:                   << ", logit_value=" << max_val << std::endl;
+        DEBUG_LOG("Iteration " << iteration << ": next_token=" << next_token << ", logit_value=" << max_val);
 
         // Check for end of transcript
         if (next_token == WHISPER_EOT) {

@@ -1,23 +1,27 @@
 #!/usr/bin/env python3
 """
-Step 1: Convert Whisper Base to TorchScript with KV Cache
+Step 1: Convert Whisper model to TorchScript with KV Cache
 
 This script:
-1. Loads original OpenAI Whisper Base model
+1. Loads original OpenAI Whisper model
 2. Creates MTK-optimized encoder and decoder with KV Cache
 3. Transfers weights
 4. Exports to TorchScript (.pt files)
 5. Exports embedding weights (.npy)
+6. Exports position_embedding.npy and model_config.json
 
 Output:
-- models/encoder.pt - TorchScript encoder
-- models/decoder_kv.pt - TorchScript decoder with KV cache
+- models/encoder_{model}_80x3000_MT8371.pt - TorchScript encoder
+- models/decoder_{model}_448_MT8371.pt - TorchScript decoder with KV cache
 - models/token_embedding.npy - Token embedding weights for C++
-- models/embedding_info.json - Metadata
+- models/position_embedding.npy - Positional embedding weights for C++
+- models/model_config.json - Model configuration metadata
 """
 
 import os
 import sys
+import json
+import argparse
 import torch
 import numpy as np
 
@@ -33,24 +37,35 @@ from whisper_kv_model import (
 
 
 def main():
-    print("="*70)
-    print("Whisper Base → TorchScript Conversion (with KV Cache)")
-    print("="*70)
+    parser = argparse.ArgumentParser(description="Convert Whisper model to TorchScript with KV Cache")
+    parser.add_argument("--model", default="base", help="Model name (e.g. base, large-v3-turbo)")
+    parser.add_argument("--model-path", default=None, help="Path to local model file; if omitted, downloads by name")
+    parser.add_argument("--output-dir", default="models", help="Output directory (default: models)")
+    args = parser.parse_args()
 
-    # Configuration
-    model_name = "base"
-    models_dir = "models"
+    model_name = args.model
+    models_dir = args.output_dir
     max_cache_len = 448  # Maximum decoder cache length
+
+    print("="*70)
+    print(f"Whisper {model_name} → TorchScript Conversion (with KV Cache)")
+    print("="*70)
 
     os.makedirs(models_dir, exist_ok=True)
 
     # Step 1: Load original Whisper model
     print("\n[Step 1/5] Loading original Whisper model...")
-    whisper_model = whisper.load_model(
-        model_name,
-        download_root="/home/xh/projects/MTK_models_zoo/whisper/mtk/models",
-        device="cpu"
-    )
+    if args.model_path:
+        whisper_model = whisper.load_model(
+            args.model_path,
+            device="cpu"
+        )
+    else:
+        whisper_model = whisper.load_model(
+            model_name,
+            download_root="/home/xh/projects/MTK_models_zoo/whisper/mtk/models",
+            device="cpu"
+        )
     whisper_model.eval()
 
     dims = whisper_model.dims
@@ -68,14 +83,14 @@ def main():
     # Step 3: Export Encoder to TorchScript
     print("\n[Step 3/5] Exporting Encoder to TorchScript...")
 
-    # Encoder input: mel spectrogram [1, 80, 3000] (30s audio)
+    # Encoder input: mel spectrogram [1, n_mels, 3000] (30s audio)
     dummy_mel = torch.randn(1, dims.n_mels, dims.n_audio_ctx * 2)
 
     print(f"  Tracing encoder with input shape: {dummy_mel.shape}")
     with torch.no_grad():
         encoder_traced = torch.jit.trace(encoder, dummy_mel)
 
-    encoder_path = os.path.join(models_dir, "encoder_base_80x3000_MT8371.pt")
+    encoder_path = os.path.join(models_dir, f"encoder_{model_name}_{dims.n_mels}x3000_MT8371.pt")
     encoder_traced.save(encoder_path)
 
     file_size_mb = os.path.getsize(encoder_path) / 1024 / 1024
@@ -128,7 +143,7 @@ def main():
             )
         )
 
-    decoder_path = os.path.join(models_dir, "decoder_base_448_MT8371.pt")
+    decoder_path = os.path.join(models_dir, f"decoder_{model_name}_448_MT8371.pt")
     decoder_traced.save(decoder_path)
 
     file_size_mb = os.path.getsize(decoder_path) / 1024 / 1024
@@ -137,6 +152,31 @@ def main():
     # Step 5: Export embedding weights
     print("\n[Step 5/5] Exporting embedding weights...")
     export_embedding_weights(whisper_model, models_dir)
+
+    # Export position embedding
+    pos_emb = whisper_model.decoder.positional_embedding.detach().cpu().numpy()
+    pos_emb_path = os.path.join(models_dir, "position_embedding.npy")
+    np.save(pos_emb_path, pos_emb)
+    print(f"  ✓ Position embedding saved: {pos_emb_path} {pos_emb.shape}")
+
+    # Export model_config.json
+    encoder_dla = f"encoder_{model_name}_{dims.n_mels}x3000_MT8371.dla"
+    decoder_dla = f"decoder_{model_name}_448_MT8371.dla"
+    model_config = {
+        "model_name": model_name,
+        "n_mels": int(dims.n_mels),
+        "d_model": int(dims.n_text_state),
+        "num_decoder_layers": int(dims.n_text_layer),
+        "vocab_size": int(dims.n_vocab),
+        "max_cache_len": max_cache_len,
+        "encoder_dla": encoder_dla,
+        "decoder_dla": decoder_dla,
+    }
+    config_path = os.path.join(models_dir, "model_config.json")
+    with open(config_path, "w") as f:
+        json.dump(model_config, f, indent=2)
+    print(f"  ✓ Model config saved: {config_path}")
+    print(f"    {model_config}")
 
     # Verify exports
     print("\n" + "="*70)
@@ -184,7 +224,14 @@ def main():
     print("Export Complete!")
     print("="*70)
     print("\nGenerated files:")
-    for filename in ["encoder_base_80x3000_MT8371.pt", "decoder_base_448_MT8371.pt", "token_embedding.npy", "embedding_info.json"]:
+    for filename in [
+        f"encoder_{model_name}_{dims.n_mels}x3000_MT8371.pt",
+        f"decoder_{model_name}_448_MT8371.pt",
+        "token_embedding.npy",
+        "position_embedding.npy",
+        "model_config.json",
+        "embedding_info.json",
+    ]:
         filepath = os.path.join(models_dir, filename)
         if os.path.exists(filepath):
             size_mb = os.path.getsize(filepath) / 1024 / 1024

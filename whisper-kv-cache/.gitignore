@@ -1,0 +1,244 @@
+# ============================================
+# MTK Model Zoo - Git Ignore Configuration
+# ============================================
+# 只上传代码、配置、文档，忽略所有二进制文件、编译产物、模型权重
+
+# ============================================
+# Python
+# ============================================
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# PyTorch
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# Python eggs
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+
+# ============================================
+# 模型文件（所有格式）
+# ============================================
+# TensorFlow/TFLite
+*.tflite
+*.pb
+*.h5
+
+# ONNX
+*.onnx
+
+# MTK DLA
+*.dla
+
+# 权重和嵌入文件
+*.npy
+*.npz
+*.bin
+*.weights
+
+# ============================================
+# C/C++ 编译产物
+# ============================================
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Android NDK 编译产物
+libs/
+obj/
+local.properties
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+
+# ============================================
+# Android
+# ============================================
+# APK files
+*.apk
+*.aab
+
+# Android build files
+.gradle/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ============================================
+# 测试数据和输出
+# ============================================
+# 音频/视频文件
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.mp4
+*.avi
+*.mkv
+
+# 图像文件
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.tiff
+*.gif
+*.webp
+
+# 测试输出
+test/outputs/baseline/*.json
+test/outputs/baseline/*.txt
+test/outputs/torchscript/*.json
+test/outputs/torchscript/*.txt
+test/outputs/tflite/*.json
+test/outputs/tflite/*.txt
+test/outputs/dla/*.json
+test/outputs/dla/*.txt
+test/outputs/debug/*.npy
+test/outputs/debug/*.bin
+
+# 调试输出
+*.log
+*.dat
+
+# ============================================
+# 大型数据集和工具包
+# ============================================
+# MTK SDK (太大，不上传)
+0_Toolkits/neuropilot-sdk-basic*/
+0_Toolkits/mtk-env/
+
+# 数据集
+data/
+dataset/
+datasets/
+test_data/
+testdata/
+
+# 原始模型权重目录
+models/base.pt
+models/*.pth
+models/*.ckpt
+
+# ============================================
+# IDE 和编辑器
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ============================================
+# 临时文件
+# ============================================
+*.tmp
+*.temp
+*.bak
+*.cache
+*.pid
+
+# ============================================
+# Git
+# ============================================
+# 子仓库的 .git 目录（如果有嵌套git仓库）
+**/.git/
+
+# ============================================
+# 保留的空目录占位文件
+# ============================================
+# .gitkeep 文件本身不被忽略
+!.gitkeep
+
+# ============================================
+# 例外：明确保留的文件
+# ============================================
+# 保留小型示例模型（如果有，取消注释）
+# !models/example_small.pt
+
+# 保留文档中的图片（如果有）
+!docs/**/*.png
+!docs/**/*.jpg
+!**/*.md
+
+# 保留配置文件
+!*.json
+!*.yaml
+!*.yml
+!*.toml
+!*.ini
+!*.conf
+
+# 保留脚本文件
+!*.sh
+!*.py
+!*.cpp
+!*.h
+!*.hpp
+!*.c
+!*.cc
+!*.mk
+
+# 保留Android构建配置
+!Android.mk
+!Application.mk
+!AndroidManifest.xml
+
+# 保留CMake配置
+!CMakeLists.txt
+
+# 保留README和文档
+!README*
+!LICENSE*
+!CHANGELOG*
+!*.md
+!docs/**
+
+# 保留 .claude 配置（重要！）
+!.claude/**

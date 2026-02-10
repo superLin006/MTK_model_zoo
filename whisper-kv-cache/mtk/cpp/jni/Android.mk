@@ -6,8 +6,8 @@ LOCAL_PATH := $(call my-dir)
 # ========================================
 include $(CLEAR_VARS)
 LOCAL_MODULE := fftw3f
-LOCAL_SRC_FILES := /home/xh/projects/MTK/1_third_party/fftw/Android/arm64-v8a/libfftw3f.a
-LOCAL_EXPORT_C_INCLUDES := /home/xh/projects/MTK/1_third_party/fftw/include
+LOCAL_SRC_FILES := /home/xh/projects/MTK_models_zoo/1_third_party/fftw/Android/arm64-v8a/libfftw3f.a
+LOCAL_EXPORT_C_INCLUDES := /home/xh/projects/MTK_models_zoo/1_third_party/fftw/include
 include $(PREBUILT_STATIC_LIBRARY)
 
 # ========================================
@@ -20,7 +20,7 @@ LOCAL_SRC_FILES := src/utils/audio_utils.cpp
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/src \
     $(LOCAL_PATH)/src/utils \
-    /home/xh/projects/MTK/1_third_party/fftw/include
+    /home/xh/projects/MTK_models_zoo/1_third_party/fftw/include
 
 LOCAL_CPPFLAGS := -Wall -Wextra -O2
 
@@ -69,7 +69,7 @@ LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/src \
     $(LOCAL_PATH)/src/utils \
     $(LOCAL_PATH)/src/mtk-npu \
-    /home/xh/projects/MTK/1_third_party/fftw/include
+    /home/xh/projects/MTK_models_zoo/1_third_party/fftw/include
 
 LOCAL_CPPFLAGS := -Wall -Wextra -O2
 LOCAL_LDLIBS := -ldl -lm -llog
