@@ -4,6 +4,8 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -14,9 +16,9 @@ echo "=========================================="
 echo "Real-ESRGAN Build Script"
 echo "=========================================="
 
-# 配置
-ANDROID_NDK="/home/xh/Android/Ndk/android-ndk-r25c"
-MTK_NEUROPILOT_SDK="/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+# 配置（优先使用环境变量，否则使用默认路径）
+ANDROID_NDK="${ANDROID_NDK:-/path/to/android-ndk}"
+MTK_NEUROPILOT_SDK="${MTK_NEUROPILOT_SDK:-$SCRIPT_DIR/../../../../0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk}"
 TARGET_ABI="arm64-v8a"
 TARGET_ARCH="arm64"
 

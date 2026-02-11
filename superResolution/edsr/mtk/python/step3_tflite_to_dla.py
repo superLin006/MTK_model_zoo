@@ -12,6 +12,10 @@ import subprocess
 import time
 from pathlib import Path
 
+# 项目根目录（step3 在 .../edsr/mtk/python/ 下，向上4级到 MTK_models_zoo）
+_SCRIPT_DIR = Path(__file__).parent.resolve()
+_PROJECT_ROOT = _SCRIPT_DIR.parents[3]  # MTK_models_zoo/
+
 
 def compile_dla(
     tflite_path: str,
@@ -37,8 +41,11 @@ def compile_dla(
     print(f"  目标平台: {platform}")
     print("="*70)
 
-    # MTK SDK路径
-    sdk_path = "/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+    # MTK SDK路径（优先使用环境变量，否则使用项目内相对路径）
+    sdk_path = os.environ.get(
+        'MTK_NEURON_SDK',
+        str(_PROJECT_ROOT / '0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk')
+    )
     ncc_tool = f"{sdk_path}/host/bin/ncc-tflite"
 
     # 检查工具是否存在

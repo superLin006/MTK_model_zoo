@@ -247,8 +247,17 @@ Thumbs.db
 # 各项目 test_data 豁免（小型测试音频/图片）
 # ============================================
 !whisper-kv-cache/mtk/test_data/
-!whisper-kv-cache/mtk/test_data/**
-!superResolution/*/mtk/test_data/
-!superResolution/*/mtk/test_data/**
+!whisper-kv-cache/mtk/test_data/*.wav
+!whisper-kv-cache/mtk/test_data/*.flac
+!superResolution/edsr/mtk/test_data/
+!superResolution/edsr/mtk/test_data/*.png
+!superResolution/edsr/mtk/test_data/*.jpg
+!superResolution/rcan/mtk/test_data/
+!superResolution/rcan/mtk/test_data/*.png
+!superResolution/rcan/mtk/test_data/*.jpg
+!superResolution/realesrgan/mtk/test_data/
+!superResolution/realesrgan/mtk/test_data/*.png
+!superResolution/realesrgan/mtk/test_data/*.jpg
 !whisper/mtk/test_data/
-!whisper/mtk/test_data/**
+!whisper/mtk/test_data/*.wav
+!whisper/mtk/test_data/*.flac

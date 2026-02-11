@@ -15,10 +15,11 @@ echo "Whisper KV Cache - Deploy and Test"
 echo "========================================"
 
 # Configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEVICE_DIR="/data/local/tmp/whisper_kv_test"
-MODELS_DIR="/home/xh/projects/MTK_models_zoo/whisper-kv-cache/mtk/python/models_large_turbo"
-TEST_DATA_DIR="/home/xh/projects/MTK_models_zoo/whisper-kv-cache/mtk/test_data"
-MTK_LIB_DIR="/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/host/lib"
+MODELS_DIR="${MODELS_DIR:-$SCRIPT_DIR/../python/models_large_turbo}"
+TEST_DATA_DIR="${TEST_DATA_DIR:-$SCRIPT_DIR/../../test_data}"
+MTK_LIB_DIR="${MTK_LIB_DIR:-$SCRIPT_DIR/../../../0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/host/lib}"
 
 # Check if device is connected
 if ! adb devices | grep -q "device$"; then

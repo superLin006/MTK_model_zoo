@@ -28,26 +28,26 @@ def test_torchscript_export():
     print("="*70)
     
     checkpoint_path = "../../../../data/models/edsr/EDSR_x4.pt"
-    output_path = "../models/EDSR_x4_core_256x256_test.pt"
-    
+    output_path = "../models/EDSR_x4_core_339x510_test.pt"
+
     if not os.path.exists(checkpoint_path):
         print(f"❌ Checkpoint not found: {checkpoint_path}")
         return False
-    
+
     try:
         # Load model
         print("Loading PyTorch model...")
         model = load_edsr_from_checkpoint(checkpoint_path, scale=4)
         model.eval()
-        
+
         # Create core model
         print("Creating core model...")
         core_model = create_core_model_from_full(model, scale=4)
         core_model.eval()
-        
+
         # Trace model
         print("Tracing model with TorchScript...")
-        dummy_input = torch.randn(1, 3, 256, 256)
+        dummy_input = torch.randn(1, 3, 339, 510)
         
         with torch.no_grad():
             traced_model = torch.jit.trace(core_model, dummy_input)
@@ -92,12 +92,12 @@ def save_image(tensor, output_path):
 def test_torchscript_inference():
     """Test TorchScript model inference"""
     print("\n" + "="*70)
-    print("Test 2: TorchScript Inference with Real Image (256x256)")
+    print("Test 2: TorchScript Inference with Real Image (339x510)")
     print("="*70)
 
     checkpoint_path = "../../../../data/models/edsr/EDSR_x4.pt"
-    output_path = "../models/EDSR_x4_core_256x256_test.pt"
-    image_path = "../../test_data/text_256x256.png"
+    output_path = "../models/EDSR_x4_core_339x510_test.pt"
+    image_path = "../../test_data/input_510x339.png"
     output_dir = "../../test_data/output"
 
     os.makedirs(output_dir, exist_ok=True)
@@ -125,10 +125,10 @@ def test_torchscript_inference():
                 print(f"✓ 张量形状: {tuple(test_input.shape)}")
             else:
                 print("使用随机张量 (0-255 range)")
-                test_input = torch.randn(1, 3, 256, 256) * 127.5 + 127.5
+                test_input = torch.randn(1, 3, 339, 510) * 127.5 + 127.5
         else:
             print("使用随机张量 (0-255 range)")
-            test_input = torch.randn(1, 3, 256, 256) * 127.5 + 127.5
+            test_input = torch.randn(1, 3, 339, 510) * 127.5 + 127.5
 
         # Apply MeanShift preprocessing (Core model expects preprocessed input)
         print("应用 MeanShift 预处理...")
@@ -157,11 +157,11 @@ def test_torchscript_inference():
 
         # Save output if image was loaded
         if PIL_AVAILABLE and os.path.exists(image_path):
-            output_path_img = os.path.join(output_dir, "edsr_torchscript_core_256x256.png")
+            output_path_img = os.path.join(output_dir, "edsr_torchscript_core_339x510.png")
             if save_image(final_output, output_path_img):
                 print(f"✓ 输出已保存: {output_path_img}")
 
-        expected_shape = (1, 3, 1024, 1024)
+        expected_shape = (1, 3, 1356, 2040)
         if final_output.shape == expected_shape:
             print(f"✓ Output shape matches expected: {expected_shape}")
             return True
@@ -183,26 +183,26 @@ def test_output_consistency():
     print("="*70)
     
     checkpoint_path = "../../../../data/models/edsr/EDSR_x4.pt"
-    output_path = "../models/EDSR_x4_core_256x256_test.pt"
-    
+    output_path = "../models/EDSR_x4_core_339x510_test.pt"
+
     if not os.path.exists(output_path):
         print("TorchScript model not found, exporting...")
         if not test_torchscript_export():
             return False
-    
+
     try:
         # Load models
         print("Loading models...")
         full_model = load_edsr_from_checkpoint(checkpoint_path, scale=4)
         core_model = create_core_model_from_full(full_model, scale=4)
         core_model.eval()
-        
+
         traced_model = torch.jit.load(output_path)
         traced_model.eval()
-        
+
         # Create test input
         print("Running comparison...")
-        test_input = torch.randn(1, 3, 256, 256)
+        test_input = torch.randn(1, 3, 339, 510)
         
         # Get outputs
         with torch.no_grad():

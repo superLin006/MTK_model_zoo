@@ -11,9 +11,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Paths
-ANDROID_NDK="/home/xh/Android/Ndk/android-ndk-r25c"
-MTK_SDK="/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+# Paths（优先使用环境变量，否则使用默认路径）
+ANDROID_NDK="${ANDROID_NDK:-/path/to/android-ndk}"
+MTK_SDK="${MTK_SDK:-$SCRIPT_DIR/../../../../0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk}"
 SDK_LIB="$MTK_SDK/mt8371/libneuron_runtime.8.so"
 
 BINARY="$SCRIPT_DIR/jni/libs/arm64-v8a/rcan_inference"

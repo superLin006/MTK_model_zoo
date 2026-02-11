@@ -4,9 +4,10 @@ set -ex
 # Compile SenseVoice TFLite to DLA format
 # Usage: ./compile_sensevoice_fp.sh <TFLITE_PATH> <PLATFORM> <NEURON_SDK_PATH>
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TFLITE_PATH=${1:-"../model_prepare/model/sensevoice_complete.tflite"}
 PLATFORM=${2:-"MT6899"}
-NEURON_SDK_PATH=${3:-"/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"}
+NEURON_SDK_PATH=${3:-"$SCRIPT_DIR/../../../0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"}
 
 echo "================================================================"
 echo "SenseVoice TFLite -> DLA Compilation"

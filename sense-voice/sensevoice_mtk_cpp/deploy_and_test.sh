@@ -27,7 +27,7 @@ adb shell "chmod +x $DEVICE_DIR/sensevoice_main"
 
 # Push C++ shared library
 echo "Pushing libc++_shared.so..."
-NDK_STL_LIB=$(find /home/xh/Android/Sdk/ndk -name "libc++_shared.so" -path "*arm64-v8a*" | head -1)
+NDK_STL_LIB=$(find "${ANDROID_NDK:-/path/to/android-ndk}" -name "libc++_shared.so" -path "*arm64-v8a*" 2>/dev/null | head -1)
 if [ -n "$NDK_STL_LIB" ]; then
     adb push "$NDK_STL_LIB" $DEVICE_DIR/
 fi

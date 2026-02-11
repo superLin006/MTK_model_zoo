@@ -47,7 +47,7 @@ fi
 
 # Push RKNN runtime libraries
 echo "Pushing RKNN runtime library..."
-RKNN_LIB="/home/xh/projects/rknn_model_zoo/3rdparty/runtime/${TARGET_SOC}/Android/arm64-v8a/librknnrt.so"
+RKNN_LIB="${RKNN_MODEL_ZOO:-/path/to/rknn_model_zoo}/3rdparty/runtime/${TARGET_SOC}/Android/arm64-v8a/librknnrt.so"
 if [ -f "${RKNN_LIB}" ]; then
     adb push ${RKNN_LIB} ${DEVICE_DIR}/
 else

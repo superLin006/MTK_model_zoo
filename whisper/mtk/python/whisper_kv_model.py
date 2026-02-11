@@ -737,7 +737,8 @@ def create_whisper_kv_models(whisper_model, max_cache_len: int = 448):
 def test_whisper_kv_models():
     """Test MTK Whisper models with KV Cache"""
     import sys
-    sys.path.append('/home/xh/projects/MTK_models_zoo/whisper/whisper-official')
+    from pathlib import Path as _Path
+    sys.path.append(str(_Path(__file__).parents[3] / 'whisper/whisper-official'))
     import whisper
 
     print("\n" + "="*70)

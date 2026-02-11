@@ -15,15 +15,21 @@
 #include <memory>
 
 // Whisper special tokens
-#define WHISPER_SOT              50258   // Start of transcript
-#define WHISPER_EOT              50257   // End of transcript
-#define WHISPER_SPEAKER_START    50359
-#define WHISPER_SPEAKER_END      50363
-#define WHISPER_TASK_TRANScribe  50359
-#define WHISPER_TASK_TRANSLATE   50360
-#define WHISPER_TIMESTAMP_BEGIN  50364
-#define WHISPER_TASK_EN          50259
-#define WHISPER_TASK_ZH          50260
+#define WHISPER_SOT              50258   // <|startoftranscript|>
+#define WHISPER_EOT              50257   // <|endoftext|>
+#define WHISPER_SOT_LM           50360   // <|startoflm|>
+#define WHISPER_TRANSCRIBE       50359   // <|transcribe|>
+#define WHISPER_NO_TIMESTAMPS    50363   // <|notimestamps|>
+#define WHISPER_TIMESTAMP_BEGIN  50364   // <|0.00|>
+#define WHISPER_TASK_EN          50259   // <|en|>
+#define WHISPER_TASK_ZH          50260   // <|zh|>
+
+// Model variant selection - change this when switching models and recompile
+// WHISPER_MODEL_LARGE_V3_TURBO: initial tokens = [SOT, lang, SOT_LM(50360), TIMESTAMP_BEGIN(50364)]
+// WHISPER_MODEL_BASE:           initial tokens = [SOT, lang, TRANSCRIBE(50359), NO_TIMESTAMPS(50363)]
+#define WHISPER_MODEL_LARGE_V3_TURBO  1
+#define WHISPER_MODEL_BASE            2
+#define WHISPER_MODEL_VARIANT  WHISPER_MODEL_LARGE_V3_TURBO  // <-- change here when switching models
 
 /**
  * Whisper Inference Engine
@@ -76,6 +82,11 @@ private:
     bool load_token_embeddings(const std::string& path);
 
     /**
+     * Load position embeddings (for decoder)
+     */
+    bool load_position_embeddings(const std::string& path);
+
+    /**
      * Load encoder DLA model
      */
     bool load_encoder_dla(const std::string& path);
@@ -121,14 +132,38 @@ private:
      */
     void lookup_embedding(int token_id, std::vector<float>& embeddings, size_t offset);
 
+    /**
+     * Reset KV cache for new inference
+     */
+    void reset_kv_cache();
+
+    /**
+     * Create self-attention mask for current cache length
+     * @param cache_len Current cache length
+     * @param mask Output mask buffer [1, 1, 1, 449]
+     */
+    void create_self_attn_mask(int cache_len, float* mask);
+
+    /**
+     * Get position embedding for given position
+     * @param position Token position
+     * @param output Output buffer [1, 1, 512]
+     */
+    void get_position_embedding(int position, float* output);
+
 private:
     // Configuration
     bool initialized_ = false;
+    bool debug_mode_ = false;  // Control debug output
+
+    // Model configuration (can be set for different model sizes)
+    int vocab_size_ = 51866;   // 51865 for base, 51866 for large-v3-turbo
+    int d_model_ = 1280;       // n_text_state: 384(tiny), 512(base), 768(small), 1024(medium), 1280(large)
+    int num_layers_ = 4;       // n_text_layer: 4(tiny/large-v3-turbo), 6(base), 12(small), 24(medium), 32(large)
+    int max_cache_len_ = 448;  // n_text_ctx: always 448
 
     // Embedding weights (vocab_size x d_model)
     std::vector<float> token_embeddings_;
-    int vocab_size_ = 51865;
-    int d_model_ = 512;
 
     // Mel filters
     std::vector<float> mel_filters_;
@@ -141,6 +176,20 @@ private:
     // NPU executors
     std::unique_ptr<NeuronExecutor> encoder_executor_;
     std::unique_ptr<NeuronExecutor> decoder_executor_;
+
+    // KV cache buffers: [num_layers, batch=1, seq_len, d_model]
+    std::vector<float> past_self_keys_;     // [6, 1, 448, 512]
+    std::vector<float> past_self_values_;   // [6, 1, 448, 512]
+    std::vector<float> cached_cross_keys_;  // [6, 1, 1500, 512] - computed once
+    std::vector<float> cached_cross_values_;// [6, 1, 1500, 512] - computed once
+
+    // Position embeddings (loaded from Python or sinusoidal)
+    std::vector<float> position_embeddings_; // [448, 512]
+    bool position_embeddings_loaded_ = false;
+
+    // Current cache state
+    int cache_len_ = 0;
+    bool cross_cache_initialized_ = false;
 };
 
 #endif // WHISPER_INFERENCE_H

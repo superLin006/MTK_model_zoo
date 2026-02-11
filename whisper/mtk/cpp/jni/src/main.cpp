@@ -67,13 +67,6 @@ int main(int argc, char* argv[]) {
     std::cout << "\n=== Inference ===" << std::endl;
     std::string result = whisper.run(audio_file, language, task);
 
-    // Print result
-    std::cout << "\n=== Result ===" << std::endl;
-    std::cout << "Recognized text: \"" << result << "\"" << std::endl;
-
-    // Cleanup
-    whisper.release();
-
     std::cout << "\n[INFO] Done!" << std::endl;
     return 0;
 }

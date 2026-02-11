@@ -8,6 +8,11 @@ import torch
 import numpy as np
 import os
 import subprocess
+from pathlib import Path
+
+# 项目根目录（convert.py 在 .../helsinki/helsinki_workspace/model_prepare/ 下，向上3级到 MTK_models_zoo）
+_SCRIPT_DIR = Path(__file__).parent.resolve()
+_PROJECT_ROOT = _SCRIPT_DIR.parents[2]  # MTK_models_zoo/
 
 from mtk_model import create_encoder_decoder_kvcache_v2
 
@@ -65,7 +70,10 @@ def convert_tflite(pt_path, tflite_path, input_shapes, input_types):
 
 
 def compile_dla(tflite_path, dla_path, platform):
-    sdk = "/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
+    sdk = os.environ.get(
+        'MTK_NEURON_SDK',
+        str(_PROJECT_ROOT / '0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk')
+    )
     ncc = f"{sdk}/host/bin/ncc-tflite"
 
     cfg = {

@@ -1,231 +1,186 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-步骤3: 将Whisper TFLite转换为DLA格式
-使用MTK ncc-tflite编译器
+Step 3: Compile TFLite models to DLA format
+
+This script compiles TFLite models to MTK DLA (Deep Learning Accelerator) format
+for MT8371 NPU deployment.
+
+Platform: MT8371 (MDLA 5.3)
+- arch: mdla5.3,edma3.6
+- l1: 256 KB
+- mdla: 1 core
+
+Output:
+- models/encoder_base_80x3000_MT8371.dla
+- models/decoder_base_448_MT8371.dla
 """
 
-import argparse
 import os
-import json
+import argparse
 import subprocess
-import time
 from pathlib import Path
 
+# 项目根目录（step3 在 .../whisper/mtk/python/ 下，向上3级到 MTK_models_zoo）
+_SCRIPT_DIR = Path(__file__).parent.resolve()
+_PROJECT_ROOT = _SCRIPT_DIR.parents[2]  # MTK_models_zoo/
 
-def compile_dla(
-    tflite_path: str,
-    output_dir: str = None,
-    platform: str = 'MT8371',
-    model_name: str = None
-):
-    """
-    将TFLite编译为DLA格式
 
-    参数:
-        tflite_path: TFLite模型路径
-        output_dir: 输出目录（默认与输入相同）
-        platform: 目标平台 (MT8371, MT6899, MT6991)
-        model_name: 模型名称（用于日志）
-    """
-    if output_dir is None:
-        output_dir = os.path.dirname(tflite_path)
-
-    model_desc = model_name if model_name else os.path.basename(tflite_path)
-    
-    print("="*70)
-    print(f"步骤3: {model_desc} TFLite -> DLA")
-    print("="*70)
-    print(f"  输入: {tflite_path}")
-    print(f"  输出目录: {output_dir}")
-    print(f"  目标平台: {platform}")
+def compile_tflite_to_dla(tflite_path, dla_path, model_name, relax_fp32=True):
+    """Compile TFLite to DLA using ncc-tflite"""
+    print("\n" + "="*70)
+    print(f"Compiling {model_name}: TFLite → DLA")
     print("="*70)
 
-    # MTK SDK路径
-    sdk_path = "/home/xh/projects/MTK_models_zoo/0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk"
-    ncc_tool = f"{sdk_path}/host/bin/ncc-tflite"
+    # SDK paths（优先使用环境变量，否则使用项目内相对路径）
+    sdk_root = os.environ.get(
+        'MTK_NEURON_SDK',
+        str(_PROJECT_ROOT / '0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk')
+    )
+    ncc_tflite = os.path.join(sdk_root, "host/bin/ncc-tflite")
 
-    # 检查工具是否存在
-    if not os.path.exists(ncc_tool):
-        print(f"❌ 错误: 找不到ncc-tflite工具")
-        print(f"   期望路径: {ncc_tool}")
-        return None
-
-    # 平台配置
-    platform_configs = {
-        'MT8371': {'arch': 'mdla5.3,edma3.6', 'l1': '256', 'mdla': '1'},
-        'MT6899': {'arch': 'mdla5.5,edma3.6', 'l1': '2048', 'mdla': '2'},
-        'MT6991': {'arch': 'mdla5.5,edma3.6', 'l1': '7168', 'mdla': '4'},
-    }
-
-    if platform not in platform_configs:
-        print(f"❌ 错误: 不支持的平台 {platform}")
-        print(f"   支持的平台: {list(platform_configs.keys())}")
-        return None
-
-    cfg = platform_configs[platform]
-
-    # 构建输出路径
-    basename = os.path.basename(tflite_path).replace('.tflite', f'_{platform}.dla')
-    dla_path = os.path.join(output_dir, basename)
-
-    print(f"\n编译DLA模型...")
-    print(f"  ncc-tflite: {ncc_tool}")
-    print(f"  架构: {cfg['arch']}")
-    print(f"  L1缓存: {cfg['l1']} KB")
-    print(f"  MDLA数量: {cfg['mdla']}")
-
-    # 设置环境变量
+    # Set library path for ncc-tflite
     env = os.environ.copy()
-    env['LD_LIBRARY_PATH'] = f"{sdk_path}/host/lib:" + env.get('LD_LIBRARY_PATH', '')
+    lib_path = os.path.join(sdk_root, "host/lib")
+    if "LD_LIBRARY_PATH" in env:
+        env["LD_LIBRARY_PATH"] = f"{lib_path}:{env['LD_LIBRARY_PATH']}"
+    else:
+        env["LD_LIBRARY_PATH"] = lib_path
 
-    # 构建命令
+    # Platform configuration for MT8371
+    platform = "mt8371"
+    arch = "mdla5.3,edma3.6"
+    l1_size = "256"  # KB
+    mdla_cores = "1"
+
+    # Compilation flags
+    compile_flags = [
+        "--opt-accuracy",    # Optimize for accuracy
+        "--opt-footprint",   # Optimize memory footprint
+    ]
+    if relax_fp32:
+        compile_flags.insert(0, "--relax-fp32")
+
+    print(f"\nInput: {tflite_path}")
+    print(f"Output: {dla_path}")
+    print(f"Platform: {platform}")
+    print(f"  Architecture: {arch}")
+    print(f"  L1 cache: {l1_size} KB")
+    print(f"  MDLA cores: {mdla_cores}")
+    print(f"Flags: {' '.join(compile_flags)}")
+
+    # Build command
     cmd = [
-        ncc_tool,
+        ncc_tflite,
         tflite_path,
-        f'--arch={cfg["arch"]}',
-        f'--l1-size-kb={cfg["l1"]}',
-        f'--num-mdla={cfg["mdla"]}',
-        '--relax-fp32',      # 放宽FP32精度要求
-        '--opt-accuracy',    # 优化精度
-        '--opt-footprint',   # 优化内存占用
-        '-o', dla_path
+        f"--arch={arch}",
+        f"--l1={l1_size}",
+        f"--mdla={mdla_cores}",
+        *compile_flags,
+        "-o", dla_path
     ]
 
-    print(f"\n执行命令:")
-    print(f"  {' '.join(cmd)}")
-    print(f"\n开始编译...")
+    print("\nRunning compilation...")
+    print(f"Command: {' '.join(cmd)}")
 
-    start = time.time()
-
+    # Execute compilation
     try:
         result = subprocess.run(
             cmd,
-            env=env,
+            check=True,
             capture_output=True,
             text=True,
-            timeout=600  # 10分钟超时
+            env=env
         )
 
-        # 显示输出
-        if result.stdout:
-            print(f"\n编译日志:")
-            lines = result.stdout.split('\n')
-            for line in lines:
-                # 过滤关键信息
-                if any(keyword in line.lower() for keyword in 
-                       ['compiling', 'optimi', 'tensor', 'error', 'warning', 
-                        'size', 'performance', 'layer', 'mdla']):
-                    print(f"  {line}")
+        print("\n--- Compilation Output ---")
+        print(result.stdout)
 
-        if result.returncode == 0 and os.path.exists(dla_path):
-            dla_size_mb = os.path.getsize(dla_path) / 1024 / 1024
-            elapsed = time.time() - start
+        if result.stderr:
+            print("\n--- Warnings/Errors ---")
+            print(result.stderr)
 
-            print(f"\n  ✓ 编译成功!")
-            print(f"  输出: {basename}")
-            print(f"  大小: {dla_size_mb:.1f} MB")
-            print(f"  耗时: {elapsed:.1f}s")
-            
-            return dla_path
+    except subprocess.CalledProcessError as e:
+        print(f"\n✗ Compilation failed!")
+        print(f"Exit code: {e.returncode}")
+        print(f"\nStdout:\n{e.stdout}")
+        print(f"\nStderr:\n{e.stderr}")
+        raise
 
-        else:
-            print(f"\n  ❌ 编译失败!")
-            if result.stderr:
-                print(f"\n错误信息:")
-                print(result.stderr)
-            return None
-
-    except subprocess.TimeoutExpired:
-        print(f"\n  ❌ 编译超时 (>10分钟)")
-        return None
-    except Exception as e:
-        print(f"\n  ❌ 编译异常: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
+    # Verify output
+    if os.path.exists(dla_path):
+        file_size_mb = os.path.getsize(dla_path) / 1024 / 1024
+        print(f"\n✓ DLA model saved: {dla_path} ({file_size_mb:.2f} MB)")
+        return True
+    else:
+        print(f"\n✗ DLA file not generated: {dla_path}")
+        return False
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='步骤3: 将Whisper TFLite转换为DLA',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-示例:
-  python step3_tflite_to_dla.py \\
-      --encoder_tflite ./models/encoder_base_80x3000.tflite \\
-      --decoder_tflite ./models/decoder_base_448.tflite \\
-      --platform MT8371
-        """
-    )
-
-    parser.add_argument('--encoder_tflite', type=str, required=True,
-                       help='Encoder TFLite模型路径')
-    parser.add_argument('--decoder_tflite', type=str, required=True,
-                       help='Decoder TFLite模型路径')
-    parser.add_argument('--output_dir', type=str, default=None,
-                       help='输出目录（默认与输入相同）')
-    parser.add_argument('--platform', type=str, default='MT8371',
-                       choices=['MT8371', 'MT6899', 'MT6991'],
-                       help='目标平台 (默认: MT8371)')
-
+    parser = argparse.ArgumentParser(description="Compile Whisper TFLite models to DLA for MT8371")
+    parser.add_argument("--model", default="base", help="Model name (e.g. base, large-v3-turbo)")
+    parser.add_argument("--n-mels", type=int, default=80, help="Mel spectrogram channels (default: 80 for base, 128 for large-v3-turbo)")
+    parser.add_argument("--models-dir", default="models", help="Directory with TFLite models (default: models)")
     args = parser.parse_args()
 
-    # 获取输出目录
-    if args.output_dir is None:
-        args.output_dir = os.path.dirname(args.encoder_tflite)
+    model_name = args.model
+    models_dir = args.models_dir
 
-    os.makedirs(args.output_dir, exist_ok=True)
-
-    # 编译Encoder
-    print("\n" + "="*70)
-    print("编译Whisper Encoder")
     print("="*70)
-    
-    encoder_dla = compile_dla(
-        args.encoder_tflite,
-        args.output_dir,
-        args.platform,
-        model_name="Encoder"
-    )
-
-    if encoder_dla is None:
-        print("\n❌ Encoder编译失败，停止")
-        return
-
-    # 编译Decoder
-    print("\n" + "="*70)
-    print("编译Whisper Decoder")
+    print(f"Whisper {model_name}: TFLite → DLA Compilation")
+    print("Target: MT8371 (MDLA 5.3)")
     print("="*70)
-    
-    decoder_dla = compile_dla(
-        args.decoder_tflite,
-        args.output_dir,
-        args.platform,
-        model_name="Decoder"
-    )
 
-    if decoder_dla is None:
-        print("\n❌ Decoder编译失败")
-        return
+    success = True
 
-    # 总结
+    encoder_stem = f"encoder_{model_name}_{args.n_mels}x3000_MT8371"
+    decoder_stem = f"decoder_{model_name}_448_MT8371"
+
+    # Compile encoder (no relax-fp32 for better accuracy with deep encoder)
+    try:
+        compile_tflite_to_dla(
+            os.path.join(models_dir, f"{encoder_stem}.tflite"),
+            os.path.join(models_dir, f"{encoder_stem}.dla"),
+            "Encoder",
+            relax_fp32=False
+        )
+    except Exception as e:
+        print(f"\nEncoder compilation failed: {e}")
+        success = False
+
+    # Compile decoder
+    try:
+        compile_tflite_to_dla(
+            os.path.join(models_dir, f"{decoder_stem}.tflite"),
+            os.path.join(models_dir, f"{decoder_stem}.dla"),
+            "Decoder with KV Cache"
+        )
+    except Exception as e:
+        print(f"\nDecoder compilation failed: {e}")
+        success = False
+
+    # Summary
     print("\n" + "="*70)
-    print("✓ 所有DLA编译完成!")
+    if success:
+        print("DLA Compilation Complete!")
+    else:
+        print("DLA Compilation Failed (see errors above)")
     print("="*70)
-    print(f"\n生成的文件:")
-    print(f"  Encoder DLA: {os.path.basename(encoder_dla)}")
-    print(f"  Decoder DLA: {os.path.basename(decoder_dla)}")
 
-    print(f"\n相关文件:")
-    print(f"  Token Embedding: token_embedding.npy (需要在C++端加载)")
+    if success:
+        print("\nGenerated DLA models:")
+        for stem in [encoder_stem, decoder_stem]:
+            filepath = os.path.join(models_dir, f"{stem}.dla")
+            if os.path.exists(filepath):
+                size_mb = os.path.getsize(filepath) / 1024 / 1024
+                print(f"  ✓ {filepath} ({size_mb:.2f} MB)")
 
-    print(f"\n下一步:")
-    print(f"  1. 开发C++推理代码")
-    print(f"  2. 使用DLA模型在MT8371设备上运行")
-    print(f"  3. 实现Embedding查表（C++端）")
-    print(f"  4. 实现自回归解码循环（C++端）")
+        print("\nNext steps:")
+        print("  1. Copy DLA models and embedding weights to target device")
+        print("  2. Test on MT8371 hardware")
+
+    return 0 if success else 1
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    exit(main())

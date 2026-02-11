@@ -1,238 +1,163 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-步骤2 (修复版): 将Whisper TorchScript转换为TFLite
-修复: Decoder输入使用INT64 token IDs而不是FLOAT32 embeddings
+Step 2: Convert TorchScript models to TFLite
+
+This script converts the TorchScript encoder and decoder to MTK TFLite format.
+
+Note: MTK TFLite contains custom operators and cannot be tested in Python.
+Accuracy has been validated in step 1 (test_pt.py).
+
+Output:
+- {models_dir}/encoder_{model}_80x3000_MT8371.tflite
+- {models_dir}/decoder_{model}_448_MT8371.tflite
 """
 
-import argparse
 import os
-import json
+import sys
+import argparse
 import torch
-import time
-from pathlib import Path
 
-try:
-    import mtk_converter
-    MTK_AVAILABLE = True
-except ImportError:
-    MTK_AVAILABLE = False
-    print("❌ 错误: mtk_converter未安装")
-    print("   请确保在MTK-whisper conda环境中运行")
-    exit(1)
+# Add MTK converter path（相对于本脚本向上3级到 MTK_models_zoo）
+from pathlib import Path as _Path
+_sdk_python = str(_Path(__file__).parents[3] / '0_Toolkits/neuropilot-sdk-basic-8.0.10-build20251029/neuron_sdk/host/lib/python')
+sys.path.insert(0, os.environ.get('MTK_CONVERTER_PATH', _sdk_python))
+import mtk_converter
 
 
-def convert_encoder_to_tflite(
-    torchscript_path: str,
-    output_dir: str,
-    mel_frames: int = 3000
-):
-    """
-    将Whisper Encoder转换为TFLite
-
-    输入形状: [1, 80, 3000] (mel-spectrogram)
-    输出形状: [1, 1500, 512] (encoder features)
-    """
-    print("="*70)
-    print("步骤2.1: Encoder TorchScript -> TFLite")
-    print("="*70)
-    print(f"  输入: {torchscript_path}")
-    print(f"  输出目录: {output_dir}")
-
-    input_shape = [1, 80, mel_frames]
-    print(f"  输入形状: {input_shape} (mel-spectrogram)")
-    print("="*70)
-
-    # 构建输出路径
-    tflite_path = os.path.join(output_dir, f"encoder_base_80x{mel_frames}.tflite")
-
-    print(f"\n使用MTK Converter转换...")
-    start = time.time()
-
-    try:
-        # 创建转换器
-        converter = mtk_converter.PyTorchConverter.from_script_module_file(
-            torchscript_path,
-            input_shapes=[input_shape],
-            input_types=[torch.float32],
-        )
-
-        # FP32精度（不量化）
-        converter.quantize = False
-
-        # 转换
-        print("  正在转换...")
-        tflite_model = converter.convert_to_tflite()
-
-        # 保存
-        with open(tflite_path, 'wb') as f:
-            f.write(tflite_model)
-
-        tflite_size_mb = len(tflite_model) / 1024 / 1024
-        elapsed = time.time() - start
-
-        print(f"  ✓ 转换成功!")
-        print(f"  输出: {os.path.basename(tflite_path)}")
-        print(f"  大小: {tflite_size_mb:.1f} MB")
-        print(f"  耗时: {elapsed:.1f}s")
-
-        return tflite_path
-
-    except Exception as e:
-        print(f"  ❌ 转换失败: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
-
-
-def convert_decoder_to_tflite(
-    torchscript_path: str,
-    output_dir: str,
-    max_seq_len: int = 448
-):
-    """
-    将Whisper Decoder转换为TFLite
-
-    修复版: 使用INT64 token IDs作为输入,而不是embeddings
-
-    输入1: token_ids [1, seq_len] (INT64) ✅ 修复
-    输入2: encoder_output [1, 1500, 512] (FLOAT32)
-    输出: logits [1, seq_len, 51865] (FLOAT32)
-    """
+def convert_encoder(model_name, models_dir, n_mels):
     print("\n" + "="*70)
-    print("步骤2.2: Decoder TorchScript -> TFLite (修复版)")
+    print("Converting Encoder: TorchScript → TFLite")
     print("="*70)
-    print(f"  输入: {torchscript_path}")
-    print(f"  输出目录: {output_dir}")
 
-    # Decoder有两个输入 - 修复版!
+    torchscript_path = os.path.join(models_dir, f"encoder_{model_name}_{n_mels}x3000_MT8371.pt")
+    tflite_path = os.path.join(models_dir, f"encoder_{model_name}_{n_mels}x3000_MT8371.tflite")
+
+    # Encoder input: mel spectrogram [1, n_mels, 3000]
+    input_shapes = [(1, n_mels, 3000)]
+    input_types = [torch.float32]
+
+    print(f"\nInput: {torchscript_path}")
+    print(f"Output: {tflite_path}")
+    print(f"Input shapes: {input_shapes}")
+
+    # Create converter
+    converter = mtk_converter.PyTorchConverter.from_script_module_file(
+        torchscript_path,
+        input_shapes=input_shapes,
+        input_types=input_types
+    )
+
+    # Disable quantization for FP32 model
+    converter.quantize = False
+
+    print("\nConverting...")
+    tflite_model = converter.convert_to_tflite()
+
+    # Save TFLite model
+    with open(tflite_path, "wb") as f:
+        f.write(tflite_model)
+
+    file_size_mb = os.path.getsize(tflite_path) / 1024 / 1024
+    print(f"✓ Encoder TFLite saved: {tflite_path} ({file_size_mb:.2f} MB)")
+
+    return tflite_path
+
+
+def convert_decoder(model_name, models_dir, d_model, n_layers):
+    print("\n" + "="*70)
+    print("Converting Decoder: TorchScript → TFLite")
+    print("="*70)
+
+    torchscript_path = os.path.join(models_dir, f"decoder_{model_name}_448_MT8371.pt")
+    tflite_path = os.path.join(models_dir, f"decoder_{model_name}_448_MT8371.tflite")
+
+    # Decoder inputs for single-token inference with KV cache
+    # 1. token_embeddings: [1, 1, d_model]
+    # 2. encoder_output: [1, 1500, d_model]
+    # 3. past_self_keys: [n_layers, 1, 448, d_model]
+    # 4. past_self_values: [n_layers, 1, 448, d_model]
+    # 5. position_embed: [1, 1, d_model]
+    # 6. self_attn_mask: [1, 1, 1, 449]
+    # 7. cached_cross_keys: [n_layers, 1, 1500, d_model]
+    # 8. cached_cross_values: [n_layers, 1, 1500, d_model]
+
     input_shapes = [
-        [1, max_seq_len],      # ✅ token_ids (INT64) - 修复!
-        [1, 1500, 512],         # encoder_output (FLOAT32)
+        (1, 1, d_model),            # token_embeddings
+        (1, 1500, d_model),         # encoder_output
+        (n_layers, 1, 448, d_model),  # past_self_keys
+        (n_layers, 1, 448, d_model),  # past_self_values
+        (1, 1, d_model),            # position_embed
+        (1, 1, 1, 449),             # self_attn_mask
+        (n_layers, 1, 1500, d_model), # cached_cross_keys
+        (n_layers, 1, 1500, d_model), # cached_cross_values
     ]
-    input_types = [
-        torch.int64,            # ✅ INT64类型
-        torch.float32,
-    ]
+    input_types = [torch.float32] * len(input_shapes)
 
-    print(f"  ⚠️  修复说明:")
-    print(f"     输入1形状: {input_shapes[0]} (token_ids, INT64)")
-    print(f"     输入2形状: {input_shapes[1]} (encoder_output, FLOAT32)")
-    print(f"     与RKNN实现一致!")
-    print("="*70)
+    print(f"\nModel: {model_name}  d_model={d_model}  n_layers={n_layers}")
+    print(f"Input: {torchscript_path}")
+    print(f"Output: {tflite_path}")
+    print(f"Input shapes:")
+    for i, shape in enumerate(input_shapes):
+        print(f"  [{i}] {shape}")
 
-    # 构建输出路径
-    tflite_path = os.path.join(output_dir, f"decoder_base_{max_seq_len}.tflite")
+    # Create converter
+    print("\nCreating converter...")
+    converter = mtk_converter.PyTorchConverter.from_script_module_file(
+        torchscript_path,
+        input_shapes=input_shapes,
+        input_types=input_types
+    )
 
-    print(f"\n使用MTK Converter转换...")
-    start = time.time()
+    # Disable quantization for FP32 model
+    converter.quantize = False
 
-    try:
-        # 创建转换器
-        converter = mtk_converter.PyTorchConverter.from_script_module_file(
-            torchscript_path,
-            input_shapes=input_shapes,
-            input_types=input_types,
-        )
+    print("Converting (this may take a while)...")
+    tflite_model = converter.convert_to_tflite()
 
-        # FP32精度（不量化）
-        converter.quantize = False
+    # Save TFLite model
+    with open(tflite_path, "wb") as f:
+        f.write(tflite_model)
 
-        # 转换
-        print("  正在转换...")
-        tflite_model = converter.convert_to_tflite()
+    file_size_mb = os.path.getsize(tflite_path) / 1024 / 1024
+    print(f"✓ Decoder TFLite saved: {tflite_path} ({file_size_mb:.2f} MB)")
 
-        # 保存
-        with open(tflite_path, 'wb') as f:
-            f.write(tflite_model)
-
-        tflite_size_mb = len(tflite_model) / 1024 / 1024
-        elapsed = time.time() - start
-
-        print(f"  ✓ 转换成功!")
-        print(f"  输出: {os.path.basename(tflite_path)}")
-        print(f"  大小: {tflite_size_mb:.1f} MB")
-        print(f"  耗时: {elapsed:.1f}s")
-
-        return tflite_path
-
-    except Exception as e:
-        print(f"  ❌ 转换失败: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
+    return tflite_path
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='步骤2 (修复版): 将Whisper TorchScript转换为TFLite',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-示例:
-  python step2_torchscript_to_tflite_fixed.py \\
-      --encoder_pt ./models/encoder_base_3000.pt \\
-      --decoder_pt ./models/decoder_base_448.pt \\
-      --output_dir ./models
-        """
-    )
-
-    parser.add_argument('--encoder_pt', type=str, required=True,
-                       help='Encoder TorchScript文件路径')
-    parser.add_argument('--decoder_pt', type=str, required=True,
-                       help='Decoder TorchScript文件路径')
-    parser.add_argument('--output_dir', type=str, default='./models',
-                       help='输出目录')
-    parser.add_argument('--mel_frames', type=int, default=3000,
-                       help='Mel帧数（默认3000=30秒）')
-    parser.add_argument('--max_seq_len', type=int, default=448,
-                       help='Decoder最大序列长度')
-
+    parser = argparse.ArgumentParser(description="Convert Whisper TorchScript models to TFLite")
+    parser.add_argument("--model", default="base", help="Model name (e.g. base, large-v3-turbo)")
+    parser.add_argument("--n-mels", type=int, default=80, help="Mel spectrogram channels (default: 80 for base, 128 for large-v3-turbo)")
+    parser.add_argument("--d-model", type=int, default=512, help="Model hidden dimension (default: 512 for base)")
+    parser.add_argument("--n-layers", type=int, default=6, help="Number of decoder layers (default: 6 for base)")
+    parser.add_argument("--models-dir", default="models", help="Directory with TorchScript models (default: models)")
     args = parser.parse_args()
 
-    if not MTK_AVAILABLE:
-        return
-
-    os.makedirs(args.output_dir, exist_ok=True)
-
-    # 转换Encoder
-    encoder_tflite = convert_encoder_to_tflite(
-        args.encoder_pt,
-        args.output_dir,
-        args.mel_frames
-    )
-
-    if encoder_tflite is None:
-        print("\n❌ Encoder转换失败，停止")
-        return
-
-    # 转换Decoder
-    decoder_tflite = convert_decoder_to_tflite(
-        args.decoder_pt,
-        args.output_dir,
-        args.max_seq_len
-    )
-
-    if decoder_tflite is None:
-        print("\n❌ Decoder转换失败")
-        return
-
-    # 总结
-    print("\n" + "="*70)
-    print("✓ 所有TFLite转换完成! (修复版)")
     print("="*70)
-    print(f"\n生成的文件:")
-    print(f"  Encoder TFLite: {os.path.basename(encoder_tflite)}")
-    print(f"  Decoder TFLite: {os.path.basename(decoder_tflite)}")
+    print(f"Whisper {args.model}: TorchScript → TFLite Conversion")
+    print(f"  n_mels={args.n_mels}  d_model={args.d_model}  n_layers={args.n_layers}")
+    print("="*70)
 
-    print(f"\n⚠️  重要修复:")
-    print(f"  Decoder输入从 [1, 448, 512] FLOAT32 embeddings")
-    print(f"              改为 [1, 448] INT64 token IDs")
-    print(f"  与RKNN实现一致!")
+    # Convert encoder
+    encoder_tflite = convert_encoder(args.model, args.models_dir, args.n_mels)
 
-    print(f"\n下一步:")
-    print(f"  1. 重新编译DLA: python step3_tflite_to_dla.py ...")
-    print(f"  2. 重新部署DLA到设备")
+    # Convert decoder
+    decoder_tflite = convert_decoder(args.model, args.models_dir, args.d_model, args.n_layers)
+
+    # Summary
+    print("\n" + "="*70)
+    print("Conversion Complete!")
+    print("="*70)
+    print("\nGenerated files:")
+    for filepath in [encoder_tflite, decoder_tflite]:
+        if os.path.exists(filepath):
+            size_mb = os.path.getsize(filepath) / 1024 / 1024
+            print(f"  ✓ {filepath} ({size_mb:.2f} MB)")
+
+    print("\nNote: MTK TFLite models contain custom operators (e.g., MTKEXT_LAYER_NORMALIZATION)")
+    print("and cannot be tested in Python. Accuracy was validated in test_pt.py.")
+    print(f"\nNext step: Run step3_tflite_to_dla.py --model {args.model} --models-dir {args.models_dir}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

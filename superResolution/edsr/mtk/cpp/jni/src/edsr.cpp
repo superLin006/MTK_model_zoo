@@ -135,14 +135,14 @@ int edsr_init(const char* model_path, edsr_context_t* ctx) {
     std::cout << "[INFO] Model path: " << model_path << std::endl;
 
     // Create NeuronExecutor
-    // Input shape: [1, 3, 256, 256] (NCHW format)
-    // Output shape: [1, 3, 1024, 1024]
+    // Input shape: [1, 3, 339, 510] (NCHW format)
+    // Output shape: [1, 3, 1356, 2040]
     std::vector<std::vector<uint32_t>> input_shapes = {
-        {1, 3, 256, 256}  // [N, C, H, W]
+        {1, 3, 339, 510}  // [N, C, H, W]
     };
 
     std::vector<std::vector<uint32_t>> output_shapes = {
-        {1, 3, 1024, 1024}  // [N, C, H, W]
+        {1, 3, 1356, 2040}  // [N, C, H, W]
     };
 
     std::unique_ptr<NeuronExecutor> executor(
@@ -157,11 +157,11 @@ int edsr_init(const char* model_path, edsr_context_t* ctx) {
     ctx->neuron_executor = executor.release();
 
     // Set model parameters
-    ctx->input_width = 256;
-    ctx->input_height = 256;
+    ctx->input_width = 510;
+    ctx->input_height = 339;
     ctx->input_channels = 3;
-    ctx->output_width = 1024;
-    ctx->output_height = 1024;
+    ctx->output_width = 2040;
+    ctx->output_height = 1356;
     ctx->output_channels = 3;
     ctx->scale_factor = 4;
 

@@ -66,11 +66,11 @@ def save_image(tensor, output_path):
 def test_pytorch_inference():
     """Test EDSR inference on PyTorch"""
     print("\n" + "="*70)
-    print("Test 2: PyTorch Inference with Real Image (256x256)")
+    print("Test 2: PyTorch Inference with Real Image (339x510)")
     print("="*70)
 
     checkpoint_path = "../../../../data/models/edsr/EDSR_x4.pt"
-    image_path = "../../test_data/text_256x256.png"
+    image_path = "../../test_data/input_510x339.png"
     output_dir = "../../test_data/output"
 
     os.makedirs(output_dir, exist_ok=True)
@@ -90,10 +90,10 @@ def test_pytorch_inference():
                 print(f"✓ 张量形状: {tuple(dummy_input.shape)}")
             else:
                 print("使用随机张量")
-                dummy_input = torch.randn(1, 3, 256, 256)
+                dummy_input = torch.randn(1, 3, 339, 510)
         else:
             print("使用随机张量")
-            dummy_input = torch.randn(1, 3, 256, 256)
+            dummy_input = torch.randn(1, 3, 339, 510)
 
         # Load model
         print("加载 PyTorch 模型...")
@@ -114,12 +114,12 @@ def test_pytorch_inference():
 
         # Save output if image was loaded
         if PIL_AVAILABLE and os.path.exists(image_path):
-            output_path = os.path.join(output_dir, "edsr_pytorch_256x256.png")
+            output_path = os.path.join(output_dir, "edsr_pytorch_339x510.png")
             if save_image(output, output_path):
                 print(f"✓ 输出已保存: {output_path}")
 
         # Check output shape
-        expected_shape = (1, 3, 1024, 1024)
+        expected_shape = (1, 3, 1356, 2040)
         if output.shape == expected_shape:
             print(f"✓ Output shape matches expected: {expected_shape}")
             return True
@@ -165,7 +165,7 @@ def test_core_model_consistency():
 
         # Use random test input (0-255 range)
         print("使用随机张量验证一致性...")
-        test_input = torch.randn(1, 3, 256, 256) * 127.5 + 127.5
+        test_input = torch.randn(1, 3, 339, 510) * 127.5 + 127.5
 
         # Apply manual MeanShift (subtract mean)
         preprocessed = test_input - rgb_range * rgb_mean
