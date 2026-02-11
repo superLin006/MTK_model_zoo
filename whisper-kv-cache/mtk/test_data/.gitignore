@@ -1,0 +1,4 @@
+# Override root .gitignore: track test audio files in this directory
+!*.wav
+!*.flac
+!*.mp3

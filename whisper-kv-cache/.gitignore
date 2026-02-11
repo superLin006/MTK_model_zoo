@@ -156,7 +156,6 @@ test/outputs/debug/*.bin
 data/
 dataset/
 datasets/
-test_data/
 testdata/
 
 # 原始模型权重目录

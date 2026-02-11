@@ -152,12 +152,12 @@ test/outputs/debug/*.bin
 0_Toolkits/neuropilot-sdk-basic*/
 0_Toolkits/mtk-env/
 
-# 数据集
+# 数据集（大型，不上传）
 data/
 dataset/
 datasets/
-test_data/
 testdata/
+# test_data/ 不整体忽略，各项目按需在下方豁免
 
 # 原始模型权重目录
 models/base.pt
@@ -242,3 +242,13 @@ Thumbs.db
 
 # 保留 .claude 配置（重要！）
 !.claude/**
+
+# ============================================
+# 各项目 test_data 豁免（小型测试音频/图片）
+# ============================================
+!whisper-kv-cache/mtk/test_data/
+!whisper-kv-cache/mtk/test_data/**
+!superResolution/*/mtk/test_data/
+!superResolution/*/mtk/test_data/**
+!whisper/mtk/test_data/
+!whisper/mtk/test_data/**
