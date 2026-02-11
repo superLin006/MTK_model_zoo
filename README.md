@@ -55,15 +55,14 @@ MTK_models_zoo/
 
 ## 支持的模型
 
-### 已验证
-- **Whisper** (语音识别) — OpenAI Whisper large-v3-turbo，含 KV Cache，多语言
-- **RealESRGAN** (超分辨率) — x4 超分，输入 510x339，输出 2040x1356
-- **EDSR** (超分辨率) — x4 超分，输入 510x339，输出 2040x1356
-
-### 开发中
-- **RCAN** (超分辨率)
-- **SenseVoice** (语音识别)
-- **Helsinki** (NLP Transformer)
+| 模型 | 类型 | 说明 |
+|------|------|------|
+| **Whisper** | 语音识别 | OpenAI Whisper large-v3-turbo，含 KV Cache，支持多语言 |
+| **RealESRGAN** | 超分辨率 | x4 超分，输入 510x339，输出 2040x1356 |
+| **EDSR** | 超分辨率 | x4 超分，输入 510x339，输出 2040x1356 |
+| **RCAN** | 超分辨率 | x4 超分 |
+| **SenseVoice** | 语音识别 | 多语言语音识别与情感分析 |
+| **Helsinki** | NLP Transformer | 神经机器翻译 |
 
 ## 技术栈
 
