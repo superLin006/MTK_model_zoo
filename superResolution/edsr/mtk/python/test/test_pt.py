@@ -28,7 +28,7 @@ def test_torchscript_export():
     print("="*70)
     
     checkpoint_path = "../../../../data/models/edsr/EDSR_x4.pt"
-    output_path = "../models/EDSR_x4_core_339x510_test.pt"
+    output_path = "../models/EDSR_x4_core_510x339.pt"
 
     if not os.path.exists(checkpoint_path):
         print(f"❌ Checkpoint not found: {checkpoint_path}")
@@ -96,7 +96,7 @@ def test_torchscript_inference():
     print("="*70)
 
     checkpoint_path = "../../../../data/models/edsr/EDSR_x4.pt"
-    output_path = "../models/EDSR_x4_core_339x510_test.pt"
+    output_path = "../models/EDSR_x4_core_510x339.pt"
     image_path = "../../test_data/input_510x339.png"
     output_dir = "../../test_data/output"
 
@@ -183,7 +183,7 @@ def test_output_consistency():
     print("="*70)
     
     checkpoint_path = "../../../../data/models/edsr/EDSR_x4.pt"
-    output_path = "../models/EDSR_x4_core_339x510_test.pt"
+    output_path = "../models/EDSR_x4_core_510x339.pt"
 
     if not os.path.exists(output_path):
         print("TorchScript model not found, exporting...")
