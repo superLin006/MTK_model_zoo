@@ -120,6 +120,7 @@ def main():
     parser = argparse.ArgumentParser(description="Compile Whisper TFLite models to DLA for MT8371")
     parser.add_argument("--model", default="base", help="Model name (e.g. base, large-v3-turbo)")
     parser.add_argument("--n-mels", type=int, default=80, help="Mel spectrogram channels (default: 80 for base, 128 for large-v3-turbo)")
+    parser.add_argument("--mel-frames", type=int, default=1000, help="Mel spectrogram time frames (default: 1000 for 10s, 3000 for 30s)")
     parser.add_argument("--models-dir", default="models", help="Directory with TFLite models (default: models)")
     args = parser.parse_args()
 
@@ -128,12 +129,13 @@ def main():
 
     print("="*70)
     print(f"Whisper {model_name}: TFLite → DLA Compilation")
+    print(f"  Encoder window: {args.mel_frames} frames ({args.mel_frames//100}s)")
     print("Target: MT8371 (MDLA 5.3)")
     print("="*70)
 
     success = True
 
-    encoder_stem = f"encoder_{model_name}_{args.n_mels}x3000_MT8371"
+    encoder_stem = f"encoder_{model_name}_{args.n_mels}x{args.mel_frames}_MT8371"
     decoder_stem = f"decoder_{model_name}_448_MT8371"
 
     # Compile encoder (no relax-fp32 for better accuracy with deep encoder)

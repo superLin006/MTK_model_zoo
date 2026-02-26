@@ -13,6 +13,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <functional>
 
 // Whisper special tokens
 #define WHISPER_SOT              50258   // <|startoftranscript|>
@@ -30,6 +31,16 @@
 #define WHISPER_MODEL_LARGE_V3_TURBO  1
 #define WHISPER_MODEL_BASE            2
 #define WHISPER_MODEL_VARIANT  WHISPER_MODEL_LARGE_V3_TURBO  // <-- change here when switching models
+
+/**
+ * Streaming token callback.
+ * Called once per generated text token with the decoded text piece.
+ * The piece may be a partial word (BPE subword), so callers should
+ * accumulate pieces to form complete words when needed.
+ *
+ * @param piece  Decoded text for the current token (UTF-8, spaces already normalised)
+ */
+using TokenCallback = std::function<void(const std::string& piece)>;
 
 /**
  * Whisper Inference Engine
@@ -52,13 +63,16 @@ public:
     /**
      * Run inference on audio file
      * @param audio_file Path to audio file (WAV format)
-     * @param language Language code ("en", "zh", or NULL for auto-detect)
-     * @param task Task code ("transcribe" or "translate")
-     * @return Recognized text
+     * @param language   Language code ("en", "zh", or NULL for auto-detect)
+     * @param task       Task code ("transcribe" or "translate")
+     * @param callback   Optional streaming callback, called once per generated token.
+     *                   Pass nullptr to disable streaming (batch mode, same as before).
+     * @return Full recognised text (identical whether callback is set or not)
      */
     std::string run(const char* audio_file,
                    const char* language = nullptr,
-                   const char* task = "transcribe");
+                   const char* task = "transcribe",
+                   TokenCallback callback = nullptr);
 
     /**
      * Release resources
@@ -107,17 +121,26 @@ private:
 
     /**
      * Run decoder inference (autoregressive)
-     * @param encoder_output Encoder output [1, 1500, 512]
-     * @param tokens Output token sequence
+     * @param encoder_output Encoder output [1, enc_seq_len, d_model]
+     * @param tokens         Output token sequence
      * @param language_token Language token (e.g., WHISPER_TASK_EN or WHISPER_TASK_ZH)
+     * @param callback       Optional streaming callback (called per token, nullptr = disabled)
      * @return true on success
      */
     bool run_decoder(const std::vector<float>& encoder_output,
                     std::vector<int>& tokens,
-                    int language_token = WHISPER_TASK_EN);
+                    int language_token = WHISPER_TASK_EN,
+                    TokenCallback callback = nullptr);
 
     /**
-     * Decode tokens to text using vocabulary
+     * Decode a single token id to its text piece.
+     * Applies BPE space normalisation (Ġ → ' ') and base64 decoding.
+     * Returns empty string for special tokens.
+     */
+    std::string decode_single_token(int token_id);
+
+    /**
+     * Decode a full token sequence to text (batch mode)
      * @param tokens Token sequence
      * @param task_code Task token (for language-specific processing)
      * @return Decoded text
@@ -161,6 +184,7 @@ private:
     int d_model_ = 1280;       // n_text_state: 384(tiny), 512(base), 768(small), 1024(medium), 1280(large)
     int num_layers_ = 4;       // n_text_layer: 4(tiny/large-v3-turbo), 6(base), 12(small), 24(medium), 32(large)
     int max_cache_len_ = 448;  // n_text_ctx: always 448
+    int enc_seq_len_ = 500;    // encoder output frames: mel_frames/2 (500 for 10s, 1500 for 30s)
 
     // Embedding weights (vocab_size x d_model)
     std::vector<float> token_embeddings_;
@@ -178,10 +202,10 @@ private:
     std::unique_ptr<NeuronExecutor> decoder_executor_;
 
     // KV cache buffers: [num_layers, batch=1, seq_len, d_model]
-    std::vector<float> past_self_keys_;     // [6, 1, 448, 512]
-    std::vector<float> past_self_values_;   // [6, 1, 448, 512]
-    std::vector<float> cached_cross_keys_;  // [6, 1, 1500, 512] - computed once
-    std::vector<float> cached_cross_values_;// [6, 1, 1500, 512] - computed once
+    std::vector<float> past_self_keys_;     // [4, 1, 448, 1280]
+    std::vector<float> past_self_values_;   // [4, 1, 448, 1280]
+    std::vector<float> cached_cross_keys_;  // [4, 1, enc_seq_len, 1280] - computed once
+    std::vector<float> cached_cross_values_;// [4, 1, enc_seq_len, 1280] - computed once
 
     // Position embeddings (loaded from Python or sinusoidal)
     std::vector<float> position_embeddings_; // [448, 512]

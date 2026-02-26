@@ -396,15 +396,16 @@ class WhisperEncoderCore(nn.Module):
 
     def forward(self, x: Tensor):
         """
-        x: [batch, n_mels, n_ctx*2] - mel spectrogram (3000 frames for 30s)
-        returns: [batch, n_ctx, n_state] - encoder features (1500 frames)
+        x: [batch, n_mels, T] - mel spectrogram (any length up to n_ctx*2)
+        returns: [batch, T//2, n_state] - encoder features
         """
         x = F.gelu(self.conv1(x))
         x = F.gelu(self.conv2(x))
         x = x.permute(0, 2, 1)
 
-        assert x.shape[1:] == self.positional_embedding.shape, "incorrect audio shape"
-        x = (x + self.positional_embedding).to(x.dtype)
+        # Support shorter windows: truncate positional_embedding to actual sequence length
+        seq_len = x.shape[1]
+        x = (x + self.positional_embedding[:seq_len]).to(x.dtype)
 
         for block in self.blocks:
             x = block(x)

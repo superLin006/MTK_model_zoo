@@ -84,14 +84,17 @@ def main():
     # Step 3: Export Encoder to TorchScript
     print("\n[Step 3/5] Exporting Encoder to TorchScript...")
 
-    # Encoder input: mel spectrogram [1, n_mels, 3000] (30s audio)
-    dummy_mel = torch.randn(1, dims.n_mels, dims.n_audio_ctx * 2)
+    # Encoder input: mel spectrogram [1, n_mels, 1000] (10s audio, 10s*100frames/s=1000)
+    # Output: [1, 500, n_state]  (1000/2 due to conv2 stride=2)
+    MEL_FRAMES = 1000   # 10s window
+    ENC_OUT_FRAMES = MEL_FRAMES // 2  # 500
+    dummy_mel = torch.randn(1, dims.n_mels, MEL_FRAMES)
 
     print(f"  Tracing encoder with input shape: {dummy_mel.shape}")
     with torch.no_grad():
         encoder_traced = torch.jit.trace(encoder, dummy_mel)
 
-    encoder_path = os.path.join(models_dir, f"encoder_{model_name}_{dims.n_mels}x3000_MT8371.pt")
+    encoder_path = os.path.join(models_dir, f"encoder_{model_name}_{dims.n_mels}x{MEL_FRAMES}_MT8371.pt")
     encoder_traced.save(encoder_path)
 
     file_size_mb = os.path.getsize(encoder_path) / 1024 / 1024
@@ -106,8 +109,8 @@ def main():
     n_state = dims.n_text_state
     enc_seq_len = dims.n_audio_ctx  # 1500
 
-    # Test with dummy encoder output
-    dummy_encoder_output = torch.randn(batch_size, enc_seq_len, n_state)
+    # Test with dummy encoder output (500 frames for 10s window)
+    dummy_encoder_output = torch.randn(batch_size, ENC_OUT_FRAMES, n_state)
 
     # Dummy inputs for single token decoding
     dummy_token_embed = torch.randn(batch_size, 1, n_state)  # Single token
@@ -161,7 +164,7 @@ def main():
     print(f"  ✓ Position embedding saved: {pos_emb_path} {pos_emb.shape}")
 
     # Export model_config.json
-    encoder_dla = f"encoder_{model_name}_{dims.n_mels}x3000_MT8371.dla"
+    encoder_dla = f"encoder_{model_name}_{dims.n_mels}x{MEL_FRAMES}_MT8371.dla"
     decoder_dla = f"decoder_{model_name}_448_MT8371.dla"
     model_config = {
         "model_name": model_name,
@@ -226,7 +229,7 @@ def main():
     print("="*70)
     print("\nGenerated files:")
     for filename in [
-        f"encoder_{model_name}_{dims.n_mels}x3000_MT8371.pt",
+        f"encoder_{model_name}_{dims.n_mels}x{MEL_FRAMES}_MT8371.pt",
         f"decoder_{model_name}_448_MT8371.pt",
         "token_embedding.npy",
         "position_embedding.npy",

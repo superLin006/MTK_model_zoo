@@ -74,7 +74,7 @@ int WhisperInference::init(const char* model_dir) {
     }
 
     // Load encoder DLA
-    if (!load_encoder_dla(base_dir + "/encoder_large-v3-turbo_128x3000_MT8371.dla")) {
+    if (!load_encoder_dla(base_dir + "/encoder_large-v3-turbo_128x1000_MT8371.dla")) {
         std::cerr << "[ERROR] Failed to load encoder DLA" << std::endl;
         return -1;
     }
@@ -200,13 +200,13 @@ bool WhisperInference::load_vocab(const std::string& path) {
 bool WhisperInference::load_encoder_dla(const std::string& path) {
     std::cout << "[INFO] Loading encoder DLA: " << path << std::endl;
 
-    // Encoder: Input [1, N_MELS, 3000], Output [1, 1500, d_model_]
+    // Encoder: Input [1, N_MELS, enc_seq_len_*2], Output [1, enc_seq_len_, d_model_]
     std::vector<std::vector<uint32_t>> input_shapes = {
-        {1, N_MELS, 3000}  // mel spectrogram
+        {1, N_MELS, (uint32_t)(enc_seq_len_ * 2)}  // mel spectrogram (1000 frames for 10s)
     };
 
     std::vector<std::vector<uint32_t>> output_shapes = {
-        {1, 1500, (uint32_t)d_model_}  // encoder output
+        {1, (uint32_t)enc_seq_len_, (uint32_t)d_model_}  // encoder output
     };
 
     encoder_executor_ = std::make_unique<NeuronExecutor>(
@@ -244,22 +244,22 @@ bool WhisperInference::load_decoder_dla(const std::string& path) {
     //   4. new_cross_values: [6, 1, 1500, 512]
 
     std::vector<std::vector<uint32_t>> input_shapes = {
-        {1, 1, (uint32_t)d_model_},                    // 0. token_embeddings
-        {1, 1500, (uint32_t)d_model_},                 // 1. encoder_output
+        {1, 1, (uint32_t)d_model_},                                             // 0. token_embeddings
+        {1, (uint32_t)enc_seq_len_, (uint32_t)d_model_},                        // 1. encoder_output
         {(uint32_t)num_layers_, 1, (uint32_t)max_cache_len_, (uint32_t)d_model_}, // 2. past_self_keys
         {(uint32_t)num_layers_, 1, (uint32_t)max_cache_len_, (uint32_t)d_model_}, // 3. past_self_values
-        {1, 1, (uint32_t)d_model_},                    // 4. position_embed
-        {1, 1, 1, (uint32_t)max_cache_len_ + 1},      // 5. self_attn_mask (449)
-        {(uint32_t)num_layers_, 1, 1500, (uint32_t)d_model_}, // 6. cached_cross_keys
-        {(uint32_t)num_layers_, 1, 1500, (uint32_t)d_model_}, // 7. cached_cross_values
+        {1, 1, (uint32_t)d_model_},                                              // 4. position_embed
+        {1, 1, 1, (uint32_t)max_cache_len_ + 1},                                 // 5. self_attn_mask (449)
+        {(uint32_t)num_layers_, 1, (uint32_t)enc_seq_len_, (uint32_t)d_model_},  // 6. cached_cross_keys
+        {(uint32_t)num_layers_, 1, (uint32_t)enc_seq_len_, (uint32_t)d_model_},  // 7. cached_cross_values
     };
 
     std::vector<std::vector<uint32_t>> output_shapes = {
-        {1, 1, VOCAB_NUM},                             // 0. logits
-        {(uint32_t)num_layers_, 1, 1, (uint32_t)d_model_},        // 1. new_self_keys
-        {(uint32_t)num_layers_, 1, 1, (uint32_t)d_model_},        // 2. new_self_values
-        {(uint32_t)num_layers_, 1, 1500, (uint32_t)d_model_},     // 3. new_cross_keys
-        {(uint32_t)num_layers_, 1, 1500, (uint32_t)d_model_},     // 4. new_cross_values
+        {1, 1, VOCAB_NUM},                                                        // 0. logits
+        {(uint32_t)num_layers_, 1, 1, (uint32_t)d_model_},                       // 1. new_self_keys
+        {(uint32_t)num_layers_, 1, 1, (uint32_t)d_model_},                       // 2. new_self_values
+        {(uint32_t)num_layers_, 1, (uint32_t)enc_seq_len_, (uint32_t)d_model_},  // 3. new_cross_keys
+        {(uint32_t)num_layers_, 1, (uint32_t)enc_seq_len_, (uint32_t)d_model_},  // 4. new_cross_values
     };
 
     decoder_executor_ = std::make_unique<NeuronExecutor>(
@@ -274,8 +274,8 @@ bool WhisperInference::load_decoder_dla(const std::string& path) {
     // Initialize KV cache buffers
     past_self_keys_.resize(num_layers_ * 1 * max_cache_len_ * d_model_, 0.0f);
     past_self_values_.resize(num_layers_ * 1 * max_cache_len_ * d_model_, 0.0f);
-    cached_cross_keys_.resize(num_layers_ * 1 * 1500 * d_model_, 0.0f);
-    cached_cross_values_.resize(num_layers_ * 1 * 1500 * d_model_, 0.0f);
+    cached_cross_keys_.resize(num_layers_ * 1 * enc_seq_len_ * d_model_, 0.0f);
+    cached_cross_values_.resize(num_layers_ * 1 * enc_seq_len_ * d_model_, 0.0f);
 
     // Note: Position embeddings are loaded in init(), not here!
 
@@ -284,7 +284,7 @@ bool WhisperInference::load_decoder_dla(const std::string& path) {
     std::cout << "[INFO]     past_self_keys/values: ["
               << num_layers_ << ", 1, " << max_cache_len_ << ", " << d_model_ << "]" << std::endl;
     std::cout << "[INFO]     cached_cross_keys/values: ["
-              << num_layers_ << ", 1, 1500, " << d_model_ << "]" << std::endl;
+              << num_layers_ << ", 1, " << enc_seq_len_ << ", " << d_model_ << "]" << std::endl;
 
     return true;
 }
@@ -293,7 +293,8 @@ bool WhisperInference::load_decoder_dla(const std::string& path) {
 
 std::string WhisperInference::run(const char* audio_file,
                                  const char* language,
-                                 const char* /*task*/) {
+                                 const char* /*task*/,
+                                 TokenCallback callback) {
     if (!initialized_) {
         std::cerr << "[ERROR] Not initialized" << std::endl;
         return "";
@@ -349,9 +350,9 @@ std::string WhisperInference::run(const char* audio_file,
         // en=50259 is the default above
     }
 
-    // Run decoder (autoregressive)
+    // Run decoder (autoregressive, with optional streaming callback)
     std::vector<int> tokens;
-    if (!run_decoder(encoder_output, tokens, language_token)) {
+    if (!run_decoder(encoder_output, tokens, language_token, callback)) {
         std::cerr << "[ERROR] Decoder inference failed" << std::endl;
         return "";
     }
@@ -371,10 +372,10 @@ std::string WhisperInference::run(const char* audio_file,
     float rtf = total_time_sec / audio_duration_sec;
 
     // Calculate memory usage
-    size_t encoder_memory = 1 * 1500 * 512 * sizeof(float);  // encoder output
+    size_t encoder_memory = 1 * enc_seq_len_ * d_model_ * sizeof(float);  // encoder output
     size_t decoder_kv_memory = (
         2 * num_layers_ * 1 * max_cache_len_ * d_model_ * sizeof(float) +  // self K,V
-        2 * num_layers_ * 1 * 1500 * d_model_ * sizeof(float)              // cross K,V
+        2 * num_layers_ * 1 * enc_seq_len_ * d_model_ * sizeof(float)       // cross K,V
     );
     size_t total_memory = encoder_memory + decoder_kv_memory;
 
@@ -445,7 +446,7 @@ bool WhisperInference::run_encoder(const std::vector<float>& mel_spec,
     std::vector<const void*> inputs = {mel_spec.data()};
 
     // Prepare output buffer
-    encoder_output.resize(1 * 1500 * d_model_);
+    encoder_output.resize(1 * enc_seq_len_ * d_model_);
     std::vector<void*> outputs = {encoder_output.data()};
 
     // Run inference
@@ -454,7 +455,7 @@ bool WhisperInference::run_encoder(const std::vector<float>& mel_spec,
         return false;
     }
 
-    std::cout << "[INFO] Encoder output shape: [1, 1500, " << d_model_ << "]" << std::endl;
+    std::cout << "[INFO] Encoder output shape: [1, " << enc_seq_len_ << ", " << d_model_ << "]" << std::endl;
 
     // Debug: Print encoder output statistics
     float min_val = encoder_output[0], max_val = encoder_output[0], sum = 0.0f;
@@ -486,7 +487,8 @@ bool WhisperInference::run_encoder(const std::vector<float>& mel_spec,
 
 bool WhisperInference::run_decoder(const std::vector<float>& encoder_output,
                                   std::vector<int>& tokens,
-                                  int language_token) {
+                                  int language_token,
+                                  TokenCallback callback) {
     std::cout << "[INFO] Running decoder with KV Cache (autoregressive greedy decoding)..." << std::endl;
 
     // Reset KV cache for new inference
@@ -519,8 +521,8 @@ bool WhisperInference::run_decoder(const std::vector<float>& encoder_output,
     std::vector<float> logits(VOCAB_NUM);               // [1, 1, 51865]
     std::vector<float> new_self_keys(num_layers_ * d_model_);    // [6, 1, 1, 512]
     std::vector<float> new_self_values(num_layers_ * d_model_);  // [6, 1, 1, 512]
-    std::vector<float> new_cross_keys(num_layers_ * 1500 * d_model_);   // [6, 1, 1500, 512]
-    std::vector<float> new_cross_values(num_layers_ * 1500 * d_model_); // [6, 1, 1500, 512]
+    std::vector<float> new_cross_keys(num_layers_ * enc_seq_len_ * d_model_);
+    std::vector<float> new_cross_values(num_layers_ * enc_seq_len_ * d_model_);
 
     tokens.clear();
 
@@ -615,9 +617,9 @@ bool WhisperInference::run_decoder(const std::vector<float>& encoder_output,
         // Initialize cross-attention cache on first iteration
         if (!cross_cache_initialized_) {
             std::memcpy(cached_cross_keys_.data(), new_cross_keys.data(),
-                       num_layers_ * 1500 * d_model_ * sizeof(float));
+                       num_layers_ * enc_seq_len_ * d_model_ * sizeof(float));
             std::memcpy(cached_cross_values_.data(), new_cross_values.data(),
-                       num_layers_ * 1500 * d_model_ * sizeof(float));
+                       num_layers_ * enc_seq_len_ * d_model_ * sizeof(float));
             cross_cache_initialized_ = true;
         }
 
@@ -667,6 +669,14 @@ bool WhisperInference::run_decoder(const std::vector<float>& encoder_output,
 
         tokens.push_back(next_token);
         iteration++;
+
+        // Streaming: emit the text piece for this token immediately
+        if (callback) {
+            std::string piece = decode_single_token(next_token);
+            if (!piece.empty()) {
+                callback(piece);
+            }
+        }
 
         // Get token embedding
         lookup_embedding(next_token, token_embed, 0);
@@ -754,6 +764,26 @@ bool WhisperInference::run_decoder(const std::vector<float>& encoder_output,
 }
 
 // ==================== Decode Tokens ====================
+
+std::string WhisperInference::decode_single_token(int token_id) {
+    if (!vocab_loaded_ || token_id < 0 || token_id >= VOCAB_NUM) {
+        return "";
+    }
+
+    const std::string& token_str = vocab_[token_id].token;
+
+    // Skip special tokens (e.g. <|en|>, <|transcribe|>, timestamps)
+    if (token_str.length() >= 2 && token_str[0] == '<' && token_str[1] == '|') {
+        return "";
+    }
+
+    std::string piece = base64_decode(token_str);
+
+    // BPE space character Ġ (U+0120, encoded as \xc4\xa0 in UTF-8) → ASCII space
+    replace_substr(piece, "\xc4\xa0", " ");
+
+    return piece;
+}
 
 std::string WhisperInference::decode_tokens(const std::vector<int>& tokens,
                                           int task_code) {

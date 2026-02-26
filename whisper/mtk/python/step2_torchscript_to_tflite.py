@@ -24,16 +24,16 @@ sys.path.insert(0, os.environ.get('MTK_CONVERTER_PATH', _sdk_python))
 import mtk_converter
 
 
-def convert_encoder(model_name, models_dir, n_mels):
+def convert_encoder(model_name, models_dir, n_mels, mel_frames=1000):
     print("\n" + "="*70)
     print("Converting Encoder: TorchScript → TFLite")
     print("="*70)
 
-    torchscript_path = os.path.join(models_dir, f"encoder_{model_name}_{n_mels}x3000_MT8371.pt")
-    tflite_path = os.path.join(models_dir, f"encoder_{model_name}_{n_mels}x3000_MT8371.tflite")
+    torchscript_path = os.path.join(models_dir, f"encoder_{model_name}_{n_mels}x{mel_frames}_MT8371.pt")
+    tflite_path = os.path.join(models_dir, f"encoder_{model_name}_{n_mels}x{mel_frames}_MT8371.tflite")
 
-    # Encoder input: mel spectrogram [1, n_mels, 3000]
-    input_shapes = [(1, n_mels, 3000)]
+    # Encoder input: mel spectrogram [1, n_mels, mel_frames]
+    input_shapes = [(1, n_mels, mel_frames)]
     input_types = [torch.float32]
 
     print(f"\nInput: {torchscript_path}")
@@ -63,7 +63,7 @@ def convert_encoder(model_name, models_dir, n_mels):
     return tflite_path
 
 
-def convert_decoder(model_name, models_dir, d_model, n_layers):
+def convert_decoder(model_name, models_dir, d_model, n_layers, enc_out_frames=500):
     print("\n" + "="*70)
     print("Converting Decoder: TorchScript → TFLite")
     print("="*70)
@@ -73,23 +73,23 @@ def convert_decoder(model_name, models_dir, d_model, n_layers):
 
     # Decoder inputs for single-token inference with KV cache
     # 1. token_embeddings: [1, 1, d_model]
-    # 2. encoder_output: [1, 1500, d_model]
+    # 2. encoder_output: [1, enc_out_frames, d_model]  (500 for 10s window)
     # 3. past_self_keys: [n_layers, 1, 448, d_model]
     # 4. past_self_values: [n_layers, 1, 448, d_model]
     # 5. position_embed: [1, 1, d_model]
     # 6. self_attn_mask: [1, 1, 1, 449]
-    # 7. cached_cross_keys: [n_layers, 1, 1500, d_model]
-    # 8. cached_cross_values: [n_layers, 1, 1500, d_model]
+    # 7. cached_cross_keys: [n_layers, 1, enc_out_frames, d_model]
+    # 8. cached_cross_values: [n_layers, 1, enc_out_frames, d_model]
 
     input_shapes = [
-        (1, 1, d_model),            # token_embeddings
-        (1, 1500, d_model),         # encoder_output
-        (n_layers, 1, 448, d_model),  # past_self_keys
-        (n_layers, 1, 448, d_model),  # past_self_values
-        (1, 1, d_model),            # position_embed
-        (1, 1, 1, 449),             # self_attn_mask
-        (n_layers, 1, 1500, d_model), # cached_cross_keys
-        (n_layers, 1, 1500, d_model), # cached_cross_values
+        (1, 1, d_model),                        # token_embeddings
+        (1, enc_out_frames, d_model),            # encoder_output
+        (n_layers, 1, 448, d_model),             # past_self_keys
+        (n_layers, 1, 448, d_model),             # past_self_values
+        (1, 1, d_model),                         # position_embed
+        (1, 1, 1, 449),                          # self_attn_mask
+        (n_layers, 1, enc_out_frames, d_model),  # cached_cross_keys
+        (n_layers, 1, enc_out_frames, d_model),  # cached_cross_values
     ]
     input_types = [torch.float32] * len(input_shapes)
 
@@ -128,21 +128,24 @@ def main():
     parser = argparse.ArgumentParser(description="Convert Whisper TorchScript models to TFLite")
     parser.add_argument("--model", default="base", help="Model name (e.g. base, large-v3-turbo)")
     parser.add_argument("--n-mels", type=int, default=80, help="Mel spectrogram channels (default: 80 for base, 128 for large-v3-turbo)")
+    parser.add_argument("--mel-frames", type=int, default=1000, help="Mel spectrogram time frames (default: 1000 for 10s, 3000 for 30s)")
     parser.add_argument("--d-model", type=int, default=512, help="Model hidden dimension (default: 512 for base)")
     parser.add_argument("--n-layers", type=int, default=6, help="Number of decoder layers (default: 6 for base)")
     parser.add_argument("--models-dir", default="models", help="Directory with TorchScript models (default: models)")
     args = parser.parse_args()
 
+    enc_out_frames = args.mel_frames // 2  # conv2 stride=2 halves the sequence length
+
     print("="*70)
     print(f"Whisper {args.model}: TorchScript → TFLite Conversion")
-    print(f"  n_mels={args.n_mels}  d_model={args.d_model}  n_layers={args.n_layers}")
+    print(f"  n_mels={args.n_mels}  mel_frames={args.mel_frames}  enc_out={enc_out_frames}  d_model={args.d_model}  n_layers={args.n_layers}")
     print("="*70)
 
     # Convert encoder
-    encoder_tflite = convert_encoder(args.model, args.models_dir, args.n_mels)
+    encoder_tflite = convert_encoder(args.model, args.models_dir, args.n_mels, args.mel_frames)
 
     # Convert decoder
-    decoder_tflite = convert_decoder(args.model, args.models_dir, args.d_model, args.n_layers)
+    decoder_tflite = convert_decoder(args.model, args.models_dir, args.d_model, args.n_layers, enc_out_frames)
 
     # Summary
     print("\n" + "="*70)
@@ -156,7 +159,7 @@ def main():
 
     print("\nNote: MTK TFLite models contain custom operators (e.g., MTKEXT_LAYER_NORMALIZATION)")
     print("and cannot be tested in Python. Accuracy was validated in test_pt.py.")
-    print(f"\nNext step: Run step3_tflite_to_dla.py --model {args.model} --models-dir {args.models_dir}")
+    print(f"\nNext step: Run step3_tflite_to_dla.py --model {args.model} --n-mels {args.n_mels} --mel-frames {args.mel_frames} --models-dir {args.models_dir}")
 
 
 if __name__ == "__main__":

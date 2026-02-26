@@ -16,7 +16,7 @@
 #define N_FFT 400                      // FFT window size
 #define HOP_LENGTH 160                 // Hop length for STFT
 #define MELS_FILTERS_SIZE 201          // Number of mel filters
-#define MAX_AUDIO_LENGTH 480000        // 30 seconds at 16kHz (30 * 16000)
+#define MAX_AUDIO_LENGTH 160000        // 10 seconds at 16kHz (10 * 16000)
 #define MAX_TOKENS 448                 // Maximum number of tokens
 #define VOCAB_NUM 51866                // Vocabulary size (51865 for base, 51866 for large-v3-turbo)
 

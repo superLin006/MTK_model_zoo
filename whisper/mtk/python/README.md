@@ -12,7 +12,7 @@ PyTorch (.pt) → TorchScript (.pt) → TFLite (.tflite) → DLA (.dla)
 
 ## 快速开始
 
-### large-v3-turbo（当前使用）
+### large-v3-turbo（当前使用，10s 窗口）
 
 ```bash
 cd python/
@@ -23,13 +23,13 @@ python step1_pt_to_torchscript.py --model large-v3-turbo --models-dir models_lar
 # Step 1 验证（可选，建议）
 python test/test_pt.py --model large-v3-turbo --models-dir models_large_turbo
 
-# Step 2: TorchScript → TFLite
+# Step 2: TorchScript → TFLite（--mel-frames 1000 表示 10s 窗口）
 python step2_torchscript_to_tflite.py --model large-v3-turbo \
-    --d-model 1280 --n-layers 4 --n-mels 128 --models-dir models_large_turbo
+    --d-model 1280 --n-layers 4 --n-mels 128 --mel-frames 1000 --models-dir models_large_turbo
 
 # Step 3: TFLite → DLA
 python step3_tflite_to_dla.py --model large-v3-turbo \
-    --n-mels 128 --models-dir models_large_turbo
+    --n-mels 128 --mel-frames 1000 --models-dir models_large_turbo
 ```
 
 ### base
@@ -57,6 +57,7 @@ python step3_tflite_to_dla.py --model base \
 | `--d-model` | 512 | 1280 |
 | `--n-layers` | 6 | 4 |
 | `--n-mels` | 80 | 128 |
+| `--mel-frames` | 1000（10s）| 1000（10s）|
 | vocab_size | 51865 | 51866 |
 | initial tokens | `[SOT, lang, 50359, 50363]` | `[SOT, lang, 50360, 50364]` |
 
@@ -69,19 +70,21 @@ python step3_tflite_to_dla.py --model base \
 
 ```
 models_large_turbo/
-├── encoder_large-v3-turbo_128x3000_MT8371.pt       (TorchScript, ~200 MB)
-├── encoder_large-v3-turbo_128x3000_MT8371.tflite   (~2430 MB)
-├── encoder_large-v3-turbo_128x3000_MT8371.dla       (1217 MB)
-├── decoder_large-v3-turbo_448_MT8371.pt             (~654 MB)
+├── encoder_large-v3-turbo_128x1000_MT8371.pt       (TorchScript, ~2431 MB)
+├── encoder_large-v3-turbo_128x1000_MT8371.tflite   (~2425 MB)
+├── encoder_large-v3-turbo_128x1000_MT8371.dla       (1214 MB)
+├── decoder_large-v3-turbo_448_MT8371.pt             (~656 MB)
 ├── decoder_large-v3-turbo_448_MT8371.tflite         (~654 MB)
 ├── decoder_large-v3-turbo_448_MT8371.dla            (327 MB)
-├── token_embedding.npy                              (251 MB, 51866 × 1280)
+├── token_embedding.npy                              (253 MB, 51866 × 1280)
 ├── position_embedding.npy                           (2.2 MB, 448 × 1280)
 ├── mel_128_filters.txt                              (25728 行，每行一个 float)
 ├── vocab.txt
 ├── model_config.json
 └── embedding_info.json
 ```
+
+> 文件名中 `128x1000` 表示 mel 通道数×帧数，对应 10s 音频窗口。
 
 ### base → `models/`
 
@@ -116,6 +119,53 @@ with open('models_large_turbo/mel_128_filters.txt', 'w') as f:
 
 生成 `.dla`、`.npy`、`.txt` 后，供 `cpp/deploy_and_test.sh` 自动推送到设备。
 部署脚本默认读取 `models_large_turbo/`，切换 base 需修改脚本中的 `MODELS_DIR`。
+
+## Encoder 窗口大小调整（30s → 10s）
+
+Whisper 原始设计固定处理 30s 音频（mel 帧数 = 3000，encoder 输出 = 1500 帧）。
+为降低推理延迟，我们将 encoder 输入窗口缩短为 10s（mel 帧数 = 1000，encoder 输出 = 500 帧）。
+
+### 原理
+
+Whisper encoder 由两层 Conv1d（stride=2）+ Transformer 组成：
+- 输入：`[1, n_mels, T]`，T = mel 帧数
+- Conv1d stride=2 → 输出序列长度 = T/2
+- Positional embedding 原长 1500，截取前 T/2 个位置即可
+
+权重完全不变，只需用更短的输入 trace 导出即可。
+
+### 实测性能对比（large-v3-turbo，5.86s 英文音频）
+
+| 指标 | 30s 窗口（旧） | 10s 窗口（新） | 提升 |
+|------|-------------|-------------|------|
+| Encoder 耗时 | 3455 ms | 942 ms | **3.7x** |
+| Decoder 耗时 | 2256 ms | 1029 ms | **2.2x**（cross-attn 变短）|
+| 总耗时 | 5778 ms | 2014 ms | **2.9x** |
+| RTF | 0.987x | 0.344x | — |
+| Cross KV cache 内存 | 76 MB | 39 MB | 节省 49% |
+
+Decoder 也变快的原因：cross-attention 的 KV 从 `[4,1,1500,1280]` 缩为 `[4,1,500,1280]`，
+每个 decoder step 的注意力计算量减少约 1/3。
+
+### 涉及的改动
+
+| 文件 | 改动内容 |
+|------|---------|
+| `whisper_kv_model.py` | `WhisperEncoderCore.forward` 改为截取 positional_embedding 前 `seq_len` 个位置，支持任意窗口长度 |
+| `step1_pt_to_torchscript.py` | dummy_mel 从 `[1,n_mels,3000]` 改为 `[1,n_mels,1000]`；encoder_output 从 1500 帧改为 500 帧 |
+| `step2_torchscript_to_tflite.py` | 新增 `--mel-frames` 参数；encoder input_shapes 和 decoder encoder_output/cross_kv shapes 随之调整 |
+| `step3_tflite_to_dla.py` | 新增 `--mel-frames` 参数；encoder 文件名 stem 随之变化 |
+| `cpp/jni/src/whisper_inference.h` | 新增 `enc_seq_len_` 成员（默认 500）；cross KV 注释更新 |
+| `cpp/jni/src/whisper_inference.cpp` | encoder DLA 路径、所有 input/output shapes、cross KV buffer 大小全部改用 `enc_seq_len_` |
+| `cpp/jni/src/utils/audio_utils.h` | `MAX_AUDIO_LENGTH` 从 480000（30s）改为 160000（10s） |
+
+### 切换回 30s 窗口
+
+如需切换回 30s 窗口，只需：
+1. 脚本参数改为 `--mel-frames 3000`（step2/step3）
+2. `audio_utils.h` 中 `MAX_AUDIO_LENGTH` 改回 `480000`
+3. `whisper_inference.h` 中 `enc_seq_len_` 改为 `1500`
+4. 重新走完三步转换 + 编译
 
 ## MTK 适配要点
 

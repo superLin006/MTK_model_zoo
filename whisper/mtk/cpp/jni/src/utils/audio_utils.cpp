@@ -334,9 +334,23 @@ void audio_preprocess(audio_buffer_t* audio, float* mel_filters,
     // Step 5: Apply clamp and log transform
     clamp_and_log_max(cur_x_mel, ROWS_A, COLS_B);
 
-    // Step 6: Pad to 3000 columns
-    int target_cols = MAX_AUDIO_LENGTH / HOP_LENGTH;  // 3000
-    x_mel.resize(N_MELS * target_cols, 0.0f);
+    // Step 6: Pad (short audio) or truncate (long audio) to target_cols
+    int target_cols = MAX_AUDIO_LENGTH / HOP_LENGTH;  // 1000 for 10s window
+    if (COLS_B > target_cols) {
+        // Truncate: compact cur_x_mel row-by-row so pad_x_mel sees a contiguous
+        // [N_MELS x target_cols] source with the correct row stride.
+        for (int r = 1; r < N_MELS; ++r) {
+            std::copy(cur_x_mel.begin() + r * COLS_B,
+                      cur_x_mel.begin() + r * COLS_B + target_cols,
+                      cur_x_mel.begin() + r * target_cols);
+        }
+        cur_x_mel.resize(N_MELS * target_cols);
+        std::cout << "[WARN] Audio exceeds " << (MAX_AUDIO_LENGTH / 16000)
+                  << "s window, truncated from " << COLS_B
+                  << " to " << target_cols << " mel frames" << std::endl;
+        COLS_B = target_cols;
+    }
+    x_mel.resize(N_MELS * target_cols, 0.0f);  // zero-init for short-audio padding
     pad_x_mel(cur_x_mel, N_MELS, COLS_B, x_mel, target_cols);
 
     std::cout << "[INFO] Computed mel spectrogram: ["

@@ -63,9 +63,25 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Run inference
+    // Run inference with streaming token output
     std::cout << "\n=== Inference ===" << std::endl;
-    std::string result = whisper.run(audio_file, language, task);
+    std::cout << "\n[STREAM] ";
+
+    // Streaming callback: print each token piece as it is generated
+    bool stream_started = false;
+    auto stream_cb = [&stream_started](const std::string& piece) {
+        if (!stream_started) {
+            stream_started = true;
+        }
+        std::cout << piece << std::flush;
+    };
+
+    std::string result = whisper.run(audio_file, language, task, stream_cb);
+
+    // Newline after streaming output
+    if (stream_started) {
+        std::cout << std::endl;
+    }
 
     std::cout << "\n[INFO] Done!" << std::endl;
     return 0;
