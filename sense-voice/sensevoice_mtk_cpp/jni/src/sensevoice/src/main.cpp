@@ -13,8 +13,39 @@
 #include <iostream>
 #include <string>
 #include <chrono>
+#include <fstream>
 
 INITIALIZE_EASYLOGGINGPP
+
+// 读取进程 RSS 内存（KB），读取 /proc/self/status
+static long read_rss_kb() {
+    std::ifstream f("/proc/self/status");
+    if (!f.is_open()) return -1;
+    std::string line;
+    while (std::getline(f, line)) {
+        if (line.rfind("VmRSS:", 0) == 0) {
+            long kb = 0;
+            sscanf(line.c_str(), "VmRSS: %ld", &kb);
+            return kb;
+        }
+    }
+    return -1;
+}
+
+// 读取进程峰值内存 VmHWM（KB）
+static long read_peak_rss_kb() {
+    std::ifstream f("/proc/self/status");
+    if (!f.is_open()) return -1;
+    std::string line;
+    while (std::getline(f, line)) {
+        if (line.rfind("VmHWM:", 0) == 0) {
+            long kb = 0;
+            sscanf(line.c_str(), "VmHWM: %ld", &kb);
+            return kb;
+        }
+    }
+    return -1;
+}
 
 void PrintUsage(const char* program_name) {
     std::cout << "SenseVoice Speech Recognition for MTK NPU\n\n";
@@ -112,11 +143,22 @@ int main(int argc, char* argv[]) {
         init_end - init_start).count();
     LOG(INFO) << "Initialization completed in " << init_duration << " ms";
 
+    // Memory after initialization
+    long rss_after_init = read_rss_kb();
+    long peak_after_init = read_peak_rss_kb();
+
     // Recognize speech
     LOG(INFO) << "-------------------------------------------------------";
     LOG(INFO) << "Starting recognition...";
 
+    auto infer_start = std::chrono::high_resolution_clock::now();
     sensevoice::RecognitionResult result = sv.RecognizeFile(audio_path, language, text_norm);
+    auto infer_end = std::chrono::high_resolution_clock::now();
+    auto infer_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        infer_end - infer_start).count();
+
+    long rss_after_infer = read_rss_kb();
+    long peak_final = read_peak_rss_kb();
 
     LOG(INFO) << "-------------------------------------------------------";
     LOG(INFO) << "Recognition Result:";
@@ -151,6 +193,19 @@ int main(int argc, char* argv[]) {
     } else {
         LOG(WARNING) << "No speech detected or recognition failed";
     }
+
+    // Performance summary (stdout, easy to parse)
+    std::cout << "=== PERFORMANCE ===\n";
+    std::cout << "Init Time:       " << init_duration << " ms\n";
+    std::cout << "Inference Time:  " << infer_duration << " ms\n";
+    if (rss_after_init >= 0)
+        std::cout << "RSS after init:  " << rss_after_init / 1024.0 << " MB"
+                  << " (peak: " << peak_after_init / 1024.0 << " MB)\n";
+    if (rss_after_infer >= 0)
+        std::cout << "RSS after infer: " << rss_after_infer / 1024.0 << " MB\n";
+    if (peak_final >= 0)
+        std::cout << "Peak RSS:        " << peak_final / 1024.0 << " MB\n";
+    std::cout << "===================\n\n";
 
     LOG(INFO) << "=======================================================";
 

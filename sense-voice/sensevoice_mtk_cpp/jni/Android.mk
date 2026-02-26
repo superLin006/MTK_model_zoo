@@ -18,7 +18,7 @@ EASYLOGGINGPP_ROOT := $(LOCAL_PATH)/third_party/easyloggingpp
 include $(EASYLOGGINGPP_ROOT)/Android.mk
 
 # kaldi-native-fbank prebuilt library
-KALDI_FBANK_PATH := /home/xh/projects/MTK/1_third_party/kaldi_native_fbank/Android
+KALDI_FBANK_PATH := /home/xh/projects/MTK_models_zoo/1_third_party/kaldi_native_fbank/Android
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := kaldi-native-fbank-core
