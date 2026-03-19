@@ -1,0 +1,26 @@
+# Model weights and large binary files
+mtk/models/checkpoint/
+mtk/python/models/*.pt
+mtk/python/models/*.tflite
+mtk/python/models/*.dla
+mtk/python/models/*.npy
+mtk/python/test/outputs/
+
+# deliver package (binary artifacts)
+deliver/
+*.zip
+
+# icefall (external dependency, not owned)
+icefall/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Build artifacts
+mtk/cpp/obj/
+mtk/cpp/libs/
+
+# Context files (auto-generated)
+mtk/.context/
