@@ -47,6 +47,19 @@ MTK_models_zoo/
 │   ├── helsinki_workspace/     # Python 端转换
 │   └── helsinki_mtk_cpp/       # C++ Android 推理实现
 │
+├── zipformer/                  # Zipformer 流式语音识别
+│   └── mtk/
+│       ├── python/             # Python 端转换（.pt → .tflite → .dla）
+│       │   ├── zipformer_mtk_model.py
+│       │   ├── step1_pt_to_torchscript.py
+│       │   ├── step2_torchscript_to_tflite.py
+│       │   ├── step3_tflite_to_dla.py
+│       │   └── test/
+│       ├── cpp/                # C++ Android 推理实现
+│       │   ├── build_android.sh
+│       │   └── deploy_to_android.sh
+│       └── test_data/          # 测试音频 + 词表（不上传）
+│
 └── .claude/                    # Claude Code 配置和知识库
     ├── subagents/
     ├── standards/
@@ -63,6 +76,7 @@ MTK_models_zoo/
 | **RCAN** | 超分辨率 | x4 超分 |
 | **SenseVoice** | 语音识别 | 多语言语音识别与情感分析 |
 | **Helsinki** | NLP Transformer | 神经机器翻译 |
+| **Zipformer** | 流式语音识别 | pruned_transducer_stateless7_streaming，中英双语，RTF 0.10x |
 
 ## 技术栈
 
