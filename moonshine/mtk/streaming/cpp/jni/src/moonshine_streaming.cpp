@@ -11,6 +11,7 @@
 #include "utils/audio_utils.h"
 #include "executor/NeuronExecutor.h"
 #include "common/Log.h"
+#include "vad/silero_vad_wrapper.h"
 
 #include <algorithm>
 #include <cmath>
@@ -117,6 +118,16 @@ bool MoonshineStreamingEngine::Initialize(
     enc_buffer_.reserve(MAX_ENC_FRAMES * ENCODER_HIDDEN_S);
     audio_remainder_.reserve(FRAME_LEN_S * 2);
 
+    // Check VAD is loaded (constructed with embedded model data)
+    if (!vad_.IsLoaded()) {
+        LOG(ERROR) << "[Streaming] Silero VAD failed to load";
+        return false;
+    }
+    LOG(INFO) << "[Streaming] Silero VAD initialized"
+              << " (window=" << VAD_WINDOW_MS << "ms"
+              << " threshold=" << VAD_THRESHOLD
+              << " silence=" << VAD_SILENCE_MS << "ms)";
+
     initialized_ = true;
     LOG(INFO) << "[Streaming] Initialization complete";
     return true;
@@ -130,6 +141,7 @@ void MoonshineStreamingEngine::Reset() {
     audio_remainder_.clear();
     enc_buffer_.clear();
     enc_frame_count_ = 0;
+    vad_.Reset();
     LOG(INFO) << "[Streaming] State reset";
 }
 
@@ -216,12 +228,15 @@ std::string MoonshineStreamingEngine::ProcessChunk(const float* audio_samples, i
         return "";
     }
 
-    // Append new samples to remainder buffer
+    // --- Step 1: Run VAD on raw PCM (parallel to encoder, independent) ---
+    bool vad_triggered = vad_.ShouldTrigger(audio_samples, num_samples);
+
+    // --- Step 2: Append new samples to remainder buffer for encoder ---
     for (int i = 0; i < num_samples; i++) {
         audio_remainder_.push_back(audio_samples[i]);
     }
 
-    // Process complete frames from remainder
+    // --- Step 3: Process complete frames from remainder (encoder path) ---
     std::string result;
 
     while ((int)audio_remainder_.size() >= FRAME_LEN_S) {
@@ -282,15 +297,8 @@ std::string MoonshineStreamingEngine::ProcessChunk(const float* audio_samples, i
             }
 
             // Slide: keep only last CHUNK_FRAMES frames in frame_buffer_
-            // (for potential future overlapping usage, though step=chunk here)
-            // With STEP_FRAMES == CHUNK_FRAMES (no overlap), we clear everything
-            // but keep a window for context on next chunk.
-            // For pure non-overlapping: just drop the processed frames.
-            // We keep last 0 frames since step=chunk, so clear.
-            // However, to allow the next chunk to be processed independently,
-            // we slide by STEP_FRAMES:
+            // With STEP_FRAMES == CHUNK_FRAMES (no overlap), clear entirely
             if (STEP_FRAMES >= CHUNK_FRAMES) {
-                // No overlap: clear entirely
                 frame_buffer_.clear();
                 frame_count_ = 0;
             } else {
@@ -303,11 +311,22 @@ std::string MoonshineStreamingEngine::ProcessChunk(const float* audio_samples, i
                 frame_count_ = keep;
             }
 
-            // Check if decoder should be triggered
-            if (enc_frame_count_ >= TRIGGER_ENC_FRAMES) {
+            // Fallback: trigger decoder if encoder buffer is full (safety cap)
+            if (result.empty() && enc_frame_count_ >= TRIGGER_ENC_FRAMES) {
+                LOG(INFO) << "[Streaming] Fallback trigger: enc_frame_count_="
+                          << enc_frame_count_;
+                // Reset VAD state so it doesn't immediately re-trigger on the
+                // tail of this segment after the fallback decode
+                vad_.Reset();
                 result = TriggerDecoder();
             }
         }
+    }
+
+    // --- Step 4: VAD-triggered decode (takes priority over fallback) ---
+    if (vad_triggered && enc_frame_count_ > 0) {
+        LOG(INFO) << "[Streaming] VAD trigger: enc_frame_count_=" << enc_frame_count_;
+        result = TriggerDecoder();
     }
 
     return result;

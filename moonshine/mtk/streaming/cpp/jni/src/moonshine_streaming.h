@@ -12,6 +12,7 @@
 #include <memory>
 
 #include "executor/NeuronExecutor.h"
+#include "vad/silero_vad_wrapper.h"
 
 namespace moonshine {
 
@@ -21,7 +22,14 @@ static constexpr int CHUNK_FRAMES       = 160;  // encoder input frames per chun
 static constexpr int CHUNK_T_ENC        = 40;   // encoder output frames per chunk
 static constexpr int STEP_FRAMES        = 40;   // sliding step (no overlap)
 static constexpr int MAX_ENC_FRAMES     = 500;  // max accumulated encoder frames
-static constexpr int TRIGGER_ENC_FRAMES = 500;  // trigger decoder at this many frames (full window)
+static constexpr int TRIGGER_ENC_FRAMES = 500;  // fallback: trigger decoder at this many frames (max window)
+
+// VAD parameters
+static constexpr int   VAD_WINDOW_MS      = 32;    // VAD analysis window (32ms = 512 samples)
+static constexpr float VAD_THRESHOLD      = 0.5f;  // speech probability threshold
+static constexpr int   VAD_SILENCE_MS     = 400;   // silence duration to trigger decoder (ms)
+static constexpr int   VAD_SPEECH_PAD_MS  = 30;    // speech padding
+static constexpr int   VAD_MIN_SPEECH_MS  = 200;   // minimum speech before silence triggers
 
 // Shared constants (same as offline)
 static constexpr int FRAME_LEN_S      = 80;    // samples per frame (5ms @ 16kHz)
@@ -162,6 +170,14 @@ private:
     std::unique_ptr<mtk::neuropilot::NeuronExecutor> decoder_executor_;
 
     bool initialized_ = false;
+
+    // --- VAD ---
+    SileroVadWrapper vad_{16000,
+                          VAD_WINDOW_MS,
+                          VAD_THRESHOLD,
+                          VAD_SILENCE_MS,
+                          VAD_SPEECH_PAD_MS,
+                          VAD_MIN_SPEECH_MS};
 
     // --- Streaming Buffers ---
 
