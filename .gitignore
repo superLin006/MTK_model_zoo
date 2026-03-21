@@ -261,3 +261,5 @@ Thumbs.db
 !whisper/mtk/test_data/
 !whisper/mtk/test_data/*.wav
 !whisper/mtk/test_data/*.flac
+!moonshine/mtk/test_data/
+!moonshine/mtk/test_data/*.wav

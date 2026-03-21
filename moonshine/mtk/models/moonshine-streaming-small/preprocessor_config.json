@@ -1,0 +1,8 @@
+{
+  "feature_extractor_type": "Wav2Vec2FeatureExtractor",
+  "sampling_rate": 16000,
+  "padding_value": 0.0,
+  "do_normalize": false,
+  "return_attention_mask": true,
+  "pad_to_multiple_of": 80
+}

@@ -1,0 +1,5 @@
+{
+  "processor_class": "MoonshineStreamingProcessor",
+  "feature_extractor_type": "Wav2Vec2FeatureExtractor",
+  "tokenizer_class": "PreTrainedTokenizerFast"
+}
