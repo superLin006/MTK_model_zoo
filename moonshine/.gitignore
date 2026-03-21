@@ -12,3 +12,23 @@ mtk/cpp/deliver/models/*.npy
 
 # zip打包文件
 mtk/cpp/*.zip
+
+# streaming chunk 模型大文件
+mtk/streaming/python/models/*.pt
+mtk/streaming/python/models/*.tflite
+
+# offline/cpp/deliver 中的二进制和模型大文件
+mtk/offline/cpp/deliver/bin/
+mtk/offline/cpp/deliver/lib/
+mtk/offline/cpp/deliver/models/*.dla
+mtk/offline/cpp/deliver/models/*.npy
+mtk/offline/cpp/libs/
+mtk/offline/cpp/obj/
+
+# streaming/cpp/deliver 中的二进制和模型大文件
+mtk/streaming/cpp/deliver/bin/
+mtk/streaming/cpp/deliver/lib/
+mtk/streaming/cpp/deliver/models/*.dla
+mtk/streaming/cpp/deliver/models/*.npy
+mtk/streaming/cpp/libs/
+mtk/streaming/cpp/obj/

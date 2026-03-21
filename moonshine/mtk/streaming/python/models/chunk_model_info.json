@@ -1,0 +1,23 @@
+{
+  "encoder_chunk": {
+    "input_shape": [
+      1,
+      160,
+      80
+    ],
+    "output_shape": [
+      1,
+      40,
+      620
+    ],
+    "chunk_frames": 160,
+    "chunk_t_enc": 40,
+    "chunk_duration_s": 0.8,
+    "file": "/home/xh/projects/MTK_models_zoo/moonshine/mtk/streaming/python/models/moonshine_encoder_chunk.pt",
+    "size_mb": 195.7
+  },
+  "decoder": {
+    "note": "\u590d\u7528 offline moonshine_decoder.pt (\u5f62\u72b6\u4e0d\u53d8)",
+    "file": "/home/xh/projects/MTK_models_zoo/moonshine/mtk/python/models/moonshine_decoder.pt"
+  }
+}
