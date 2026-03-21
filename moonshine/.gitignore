@@ -1,0 +1,14 @@
+# 官方moonshine克隆仓库（参考用，不上传）
+moonshine/
+
+# subagent中间context文件（不上传）
+mtk/.context/
+
+# deliver中的大文件（二进制，已被根.gitignore覆盖，但显式声明）
+mtk/cpp/deliver/bin/
+mtk/cpp/deliver/lib/
+mtk/cpp/deliver/models/*.dla
+mtk/cpp/deliver/models/*.npy
+
+# zip打包文件
+mtk/cpp/*.zip

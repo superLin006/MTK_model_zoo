@@ -60,6 +60,22 @@ MTK_models_zoo/
 │       │   └── deploy_to_android.sh
 │       └── test_data/          # 测试音频 + 词表（不上传）
 │
+├── moonshine/                  # Moonshine Streaming Small 语音识别
+│   └── mtk/
+│       ├── python/             # Python 端转换（.pt → .tflite → .dla）
+│       │   ├── moonshine_encoder_model.py
+│       │   ├── moonshine_decoder_model.py
+│       │   ├── step1_pt_to_torchscript.py
+│       │   ├── step2_torchscript_to_tflite.py
+│       │   ├── step3_tflite_to_dla.py
+│       │   └── test/
+│       ├── cpp/                # C++ Android 推理实现
+│       │   ├── build_android.sh
+│       │   ├── deploy_to_android.sh
+│       │   └── deliver/        # 测试交付包
+│       ├── models/             # 模型配置（权重不上传）
+│       └── test_data/          # 测试音频
+│
 └── .claude/                    # Claude Code 配置和知识库
     ├── subagents/
     ├── standards/
@@ -77,6 +93,7 @@ MTK_models_zoo/
 | **SenseVoice** | 语音识别 | 多语言语音识别与情感分析 |
 | **Helsinki** | NLP Transformer | 神经机器翻译 |
 | **Zipformer** | 流式语音识别 | pruned_transducer_stateless7_streaming，中英双语，RTF 0.10x |
+| **Moonshine Streaming Small** | 语音识别 | 英语 ASR，固定10s窗口，Encoder-Decoder，RTF 0.11x |
 
 ## 技术栈
 
@@ -179,6 +196,7 @@ bash deploy_with_sdk_lib.sh
 - [OpenAI Whisper](https://github.com/openai/whisper)
 - [EDSR-PyTorch](https://github.com/sanghyun-son/EDSR-PyTorch)
 - [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN)
+- [Moonshine](https://github.com/moonshine-ai/moonshine)
 
 ## 许可证
 
