@@ -3,6 +3,7 @@
  */
 
 #include "zipformer_inference.h"
+#include "npy_float32.h"
 #include "executor/ExecutorFactory.h"
 #include "common/Log.h"
 
@@ -15,106 +16,6 @@
 #include <sstream>
 
 namespace zipformer {
-
-// ---------------------------------------------------------------------------
-// NPY file loader (for decoder_embedding.npy)
-// Handles the numpy .npy format header and reads float32 data.
-// Format: magic (6 bytes) + version (2 bytes) + header_len (2 or 4 bytes) + header + data
-// ---------------------------------------------------------------------------
-static bool load_npy_float32(const char* path, std::vector<float>& data,
-                              int& rows, int& cols) {
-    FILE* fp = fopen(path, "rb");
-    if (!fp) {
-        LOG(ERROR) << "Cannot open npy file: " << path;
-        return false;
-    }
-
-    // Read magic + version
-    uint8_t magic[6];
-    uint8_t version[2];
-    if (fread(magic, 1, 6, fp) != 6 || fread(version, 1, 2, fp) != 2) {
-        fclose(fp);
-        return false;
-    }
-
-    // Check magic: \x93NUMPY
-    if (magic[0] != 0x93 || magic[1] != 'N' || magic[2] != 'U' ||
-        magic[3] != 'M' || magic[4] != 'P' || magic[5] != 'Y') {
-        LOG(ERROR) << "Not a valid npy file: " << path;
-        fclose(fp);
-        return false;
-    }
-
-    // Read header length (2 bytes for v1, 4 bytes for v2+)
-    uint32_t header_len = 0;
-    if (version[0] == 1) {
-        uint16_t hlen16;
-        if (fread(&hlen16, 2, 1, fp) != 1) { fclose(fp); return false; }
-        header_len = hlen16;
-    } else {
-        uint32_t hlen32;
-        if (fread(&hlen32, 4, 1, fp) != 1) { fclose(fp); return false; }
-        header_len = hlen32;
-    }
-
-    // Read header string
-    std::vector<char> header_buf(header_len + 1, 0);
-    if (fread(header_buf.data(), 1, header_len, fp) != header_len) {
-        fclose(fp);
-        return false;
-    }
-    std::string header(header_buf.data());
-
-    // Parse shape from header: look for 'shape': (R, C)
-    // We only handle 2D float32 arrays for decoder_embedding.npy
-    size_t shape_pos = header.find("'shape'");
-    if (shape_pos == std::string::npos) {
-        shape_pos = header.find("\"shape\"");
-    }
-    if (shape_pos == std::string::npos) {
-        LOG(ERROR) << "Cannot find shape in npy header";
-        fclose(fp);
-        return false;
-    }
-
-    // Find the tuple
-    size_t lp = header.find('(', shape_pos);
-    size_t rp = header.find(')', lp);
-    if (lp == std::string::npos || rp == std::string::npos) {
-        fclose(fp);
-        return false;
-    }
-
-    std::string shape_str = header.substr(lp + 1, rp - lp - 1);
-    // Remove whitespace
-    shape_str.erase(std::remove(shape_str.begin(), shape_str.end(), ' '), shape_str.end());
-
-    // Parse two integers separated by comma
-    size_t comma = shape_str.find(',');
-    if (comma == std::string::npos) {
-        fclose(fp);
-        return false;
-    }
-    rows = std::stoi(shape_str.substr(0, comma));
-    // After last comma may be trailing comma for 1-element tuples, skip
-    std::string col_str = shape_str.substr(comma + 1);
-    col_str.erase(std::remove(col_str.begin(), col_str.end(), ','), col_str.end());
-    cols = std::stoi(col_str);
-
-    // Read float32 data
-    size_t n_floats = (size_t)rows * cols;
-    data.resize(n_floats);
-    size_t read = fread(data.data(), sizeof(float), n_floats, fp);
-    fclose(fp);
-
-    if (read != n_floats) {
-        LOG(ERROR) << "npy read error: expected " << n_floats << " floats, got " << read;
-        return false;
-    }
-
-    LOG(INFO) << "Loaded npy: " << path << " shape=[" << rows << "," << cols << "]";
-    return true;
-}
 
 // ---------------------------------------------------------------------------
 // Vocab loader
